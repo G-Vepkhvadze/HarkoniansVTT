@@ -5,20 +5,25 @@ on:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
+          cache: yarn
 
       - name: Install dependencies
-        run: yarn
+        run: yarn install --frozen-lockfile
 
       - name: Extract tag version number
         id: get_version
@@ -26,9 +31,9 @@ jobs:
 
       - name: Run Vite build
         env:
-          MODULE_VERSION: ${{steps.get_version.outputs.version-without-v}}
-          GH_PROJECT: ${{github.repository}}
-          GH_TAG: ${{github.ref_name}}
+          MODULE_VERSION: ${{ steps.get_version.outputs.version-without-v }}
+          GH_PROJECT: ${{ github.repository }}
+          GH_TAG: ${{ github.ref_name }}
         run: yarn build
 
       - name: Copy favicon to dist
@@ -37,31 +42,47 @@ jobs:
       - name: Remove sourcemaps from dist
         run: find dist -name "*.map" -delete
 
-      - name: Create module directory structure
+      - name: Create Foundry module directory
         run: |
           mkdir -p harkoniansvtt
           cp -r dist/* harkoniansvtt/
 
-      - name: Create zip archive
-        run: zip -r harkoniansvtt.zip harkoniansvtt/
+      - name: Verify module structure
+        run: |
+          echo "Module contents:"
+          find harkoniansvtt -maxdepth 3 -type f | sort
+
+          test -f harkoniansvtt/module.json
+          test -f harkoniansvtt/scripts/module.js
+          test -f harkoniansvtt/style.css
+
+      - name: Create module ZIP
+        run: |
+          zip -r harkoniansvtt.zip harkoniansvtt/
+          echo "ZIP contents:"
+          unzip -l harkoniansvtt.zip
 
       - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{github.ref_name}}
-          name: Release ${{github.ref_name}}
+          tag_name: ${{ github.ref_name }}
+          name: HarkoniansVTT ${{ steps.get_version.outputs.version-without-v }}
           body: |
-            Automated release for HarkoniansVTT module version ${{steps.get_version.outputs.version-without-v}}.
-            
-            **Manifest URL:** https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/latest/download/module.json
-            
-            **Installation:** Use Foundry's "Install Module → Manifest URL" and enter the manifest URL above.
+            Automated release for HarkoniansVTT module version ${{ steps.get_version.outputs.version-without-v }}.
+
+            ## Installation
+
+            In Foundry VTT:
+
+            1. Open Add-on Modules.
+            2. Select Install Module.
+            3. Enter the Manifest URL:
+
+            https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/latest/download/module.json
+
           draft: false
           prerelease: false
           files: |
-            dist/module.json
             harkoniansvtt.zip
+            dist/module.json
           fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
