@@ -93,12 +93,22 @@ Hooks.once("ready", () => {
   });
 
   // Create center-screen button
-  const centerButton = $(
-    `<button class="harkonians-button harkonians-center-button" type="button" title="${(game as Game).i18n.localize("HARKONIANS.manageCharacters")}">
-      <img src="modules/${moduleId}/favicon.ico" alt="Harkonians" width="24" height="24" />
-    </button>`
-  );
+  const centerButton = $(`
+  <button
+    id="harkonians-center-button"
+    type="button"
+    title="Harkonians"
+  >
+    Harkonians
+  </button>
+`);
+
   $("body").append(centerButton);
+
+  centerButton.on("click", () => {
+    console.log("Harkonians button clicked");
+    module.harkoniansApp?.render(true);
+  });
   
   centerButton.css({
     position: "fixed",
