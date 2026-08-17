@@ -121,22 +121,6 @@ $harkonians-border: #dee2e6;
   }
 }
 
-.checkbox-group {
-  margin: 10px 0;
-  
-  label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: normal;
-    cursor: pointer;
-    
-    input[type="checkbox"] {
-      margin: 0;
-    }
-  }
-}
-
 .flex-header {
   display: flex;
   align-items: center;
@@ -168,44 +152,41 @@ $harkonians-border: #dee2e6;
 // ============================================
 // WORLD PAIRING STYLES
 // ============================================
-.harkonians-world-pairing {
-  .pairing-section {
+.harkonians-app {
+  .world-pairing-section {
     padding: 20px;
+    border-bottom: 1px solid $harkonians-border;
     
-    .world-info {
-      margin-bottom: 20px;
+    h2 {
+      margin: 0 0 15px;
+      font-size: 16px;
+      color: $harkonians-dark;
+    }
+    
+    .warning-section {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 15px;
+      background: rgba($harkonians-warning, 0.1);
+      border: 1px solid $harkonians-warning;
+      border-radius: 6px;
+      margin-bottom: 15px;
       
-      h2 {
-        margin: 0 0 15px;
-        font-size: 16px;
-        color: $harkonians-dark;
-        border-bottom: 1px solid $harkonians-border;
-        padding-bottom: 10px;
+      i {
+        color: $harkonians-warning;
+        font-size: 18px;
+        margin-top: 2px;
       }
       
-      .info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+      p {
+        margin: 0;
+        flex: 1;
       }
       
-      .info-item {
-        .label {
-          font-size: 12px;
-          color: #6c757d;
-        }
-        
-        .value {
-          font-weight: 500;
-          
-          &.code {
-            font-family: monospace;
-            font-size: 12px;
-            background: #f1f3f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-          }
-        }
+      .hint {
+        font-size: 12px;
+        margin-top: 5px;
       }
     }
     
@@ -218,48 +199,51 @@ $harkonians-border: #dee2e6;
       margin-bottom: 15px;
       font-weight: 500;
       
-      &.paired {
+      &.connected {
         background: rgba($harkonians-success, 0.1);
         color: darken($harkonians-success, 20%);
       }
       
-      &.unpaired {
-        background: rgba($harkonians-warning, 0.1);
-        color: darken($harkonians-warning, 30%);
+      i {
+        font-size: 16px;
       }
     }
     
-    .paired-details {
-      margin-bottom: 15px;
+    .input-with-button {
+      display: flex;
+      gap: 8px;
       
-      p {
-        margin: 0;
-        font-size: 13px;
-        color: #6c757d;
+      .form-input {
+        flex: 1;
       }
-    }
-    
-    .actions {
-      margin: 15px 0;
-    }
-    
-    .credential-section {
-      margin-top: 15px;
-      padding: 15px;
-      background: $harkonians-light;
-      border-radius: 6px;
-      border: 1px solid $harkonians-border;
       
-      p {
-        margin: 0 0 10px;
-        font-size: 14px;
+      button {
+        white-space: nowrap;
       }
+    }
+    
+    .input-with-button {
+      display: flex;
+      gap: 8px;
+      
+      .form-input {
+        flex: 1;
+      }
+      
+      button {
+        white-space: nowrap;
+      }
+    }
+    
+    button {
+      margin-right: 8px;
+      margin-bottom: 8px;
     }
   }
   
-  .settings-section {
+  .api-key-section {
     padding: 20px;
-    border-top: 1px solid $harkonians-border;
+    border-bottom: 1px solid $harkonians-border;
     
     h2 {
       margin: 0 0 15px;
@@ -272,7 +256,7 @@ $harkonians-border: #dee2e6;
 // ============================================
 // CHARACTER MANAGER STYLES
 // ============================================
-.harkonians-character-manager {
+.harkonians-app {
   .warning-banner {
     display: flex;
     align-items: center;
@@ -292,10 +276,10 @@ $harkonians-border: #dee2e6;
       margin: 0;
       flex: 1;
     }
-    
-    button {
-      margin-left: auto;
-    }
+  }
+  
+  .no-characters-section {
+    padding: 20px;
   }
   
   .no-characters {
@@ -306,6 +290,7 @@ $harkonians-border: #dee2e6;
     i {
       font-size: 48px;
       margin-bottom: 15px;
+      color: #adb5bd;
     }
     
     p {
@@ -318,141 +303,144 @@ $harkonians-border: #dee2e6;
     }
   }
   
-  .character-list {
-    padding: 15px;
-    max-height: 500px;
-    overflow-y: auto;
-  }
-  
-  .character-card {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    margin-bottom: 10px;
-    background: white;
-    border: 2px solid $harkonians-border;
-    border-radius: 8px;
-    transition: all 0.2s;
+  .characters-section {
+    padding: 20px;
     
-    &:last-child {
-      margin-bottom: 0;
+    h2 {
+      margin: 0 0 15px;
+      font-size: 16px;
+      color: $harkonians-dark;
     }
     
-    &:hover {
-      border-color: $harkonians-primary;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    .character-list {
+      padding: 15px 0;
+      max-height: 500px;
+      overflow-y: auto;
     }
     
-    &.linked {
-      border-color: $harkonians-success;
-      background: rgba($harkonians-success, 0.02);
-    }
-    
-    .character-portrait {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      object-fit: cover;
+    .character-card {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: white;
       border: 2px solid $harkonians-border;
-      margin-right: 12px;
-    }
-    
-    .character-info {
-      flex: 1;
-      min-width: 0;
+      border-radius: 8px;
+      transition: all 0.2s;
       
-      .character-name {
-        margin: 0 0 4px;
-        font-size: 15px;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      &:last-child {
+        margin-bottom: 0;
       }
       
-      .character-id {
-        font-size: 11px;
-        color: #6c757d;
-        font-family: monospace;
+      &:hover {
+        border-color: $harkonians-primary;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-    }
-    
-    .character-status {
-      flex: 0 0 200px;
       
-      .balance {
-        margin-bottom: 4px;
+      &.linked {
+        border-color: $harkonians-success;
+        background: rgba($harkonians-success, 0.02);
+      }
+      
+      // Status-based styling
+      &.status-connected {
+        border-left: 4px solid $harkonians-success;
+      }
+      
+      &.status-not-connected {
+        border-left: 4px solid $harkonians-danger;
+        opacity: 0.9;
+      }
+      
+      &.status-authorization-required {
+        border-left: 4px solid $harkonians-warning;
+      }
+      
+      &.status-invalid-credential {
+        border-left: 4px solid $harkonians-danger;
+      }
+      
+      .char-portrait {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid $harkonians-border;
+        margin-right: 12px;
+      }
+      
+      .character-info {
+        flex: 1;
+        min-width: 0;
         
-        .label {
-          font-size: 11px;
+        .char-name {
+          margin: 0 0 4px;
+          font-size: 15px;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .harkonians-name {
+          font-size: 12px;
           color: #6c757d;
           display: block;
+          margin-bottom: 2px;
         }
         
-        .value {
-          font-size: 14px;
-          font-weight: 600;
-          color: $harkonians-primary;
+        .linked-date {
+          font-size: 11px;
+          color: #6c757d;
+          font-family: monospace;
         }
       }
       
-      .status {
+      .character-status {
+        flex: 0 0 150px;
+        
+        .status {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          padding: 4px 8px;
+          border-radius: 4px;
+          
+          &.connected {
+            background: rgba($harkonians-success, 0.1);
+            color: $harkonians-success;
+          }
+          
+          &.disconnected {
+            background: rgba($harkonians-danger, 0.1);
+            color: $harkonians-danger;
+          }
+          
+          &.warning {
+            background: rgba($harkonians-warning, 0.1);
+            color: darken($harkonians-warning, 30%);
+          }
+        }
+      }
+      
+      .character-actions {
         display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        padding: 4px 8px;
-        border-radius: 4px;
+        gap: 4px;
+        margin-left: 12px;
         
-        &.connected {
-          background: rgba($harkonians-success, 0.1);
-          color: $harkonians-success;
-        }
-        
-        &.disconnected {
-          background: rgba($harkonians-danger, 0.1);
-          color: $harkonians-danger;
-        }
-        
-        &.warning {
-          background: rgba($harkonians-warning, 0.1);
-          color: darken($harkonians-warning, 30%);
+        button {
+          padding: 6px 10px;
         }
       }
-      
-      .pending-badge {
-        display: inline-block;
-        margin-top: 4px;
-        padding: 2px 6px;
-        background: $harkonians-info;
-        color: white;
-        font-size: 10px;
-        border-radius: 10px;
-        font-weight: 500;
-      }
     }
-    
-    .character-actions {
-      display: flex;
-      gap: 4px;
-      margin-left: 12px;
-    }
-  }
-  
-  .manager-footer {
-    display: flex;
-    justify-content: center;
-    padding: 15px;
-    border-top: 1px solid $harkonians-border;
-    background: $harkonians-light;
   }
 }
 
 // ============================================
 // HARKONIANS BUTTON STYLES
 // ============================================
-.harkonians-pair-button,
-.harkonians-char-button {
+.harkonians-button {
   background: transparent;
   border: none;
   padding: 4px;

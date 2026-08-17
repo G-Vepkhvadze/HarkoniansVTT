@@ -5,6 +5,12 @@ import HarkoniansConfig from "./apps/config";
 import HarkoniansApp from "./apps/harkonians";
 import { moduleId } from "./constants";
 import { MyModule } from "./types";
+import { 
+  SETTING_WORLD_SECRET,
+  SETTING_PAIRING_CODE,
+  SETTING_PAIRING_ATTEMPT,
+  SETTING_PAIRED_AT,
+} from "./api/client";
 
 let module: MyModule;
 
@@ -17,7 +23,7 @@ Hooks.once("init", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   module.harkoniansApp = new HarkoniansApp({} as any);
 
-  // Register world-scoped settings
+  // Register world-scoped settings for Harkonians integration
   (game as Game).settings.register(moduleId, "apiKey", {
     name: (game as Game).i18n.localize("HARKONIANS.apiKeyLabel"),
     hint: (game as Game).i18n.localize("HARKONIANS.apiKeyHint"),
@@ -27,16 +33,34 @@ Hooks.once("init", () => {
     default: "",
   });
 
-  (game as Game).settings.register(moduleId, "worldCredential", {
-    name: (game as Game).i18n.localize("HARKONIANS.worldCredentialLabel"),
-    hint: (game as Game).i18n.localize("HARKONIANS.worldCredentialHint"),
+  // World secret - the persistent credential obtained after successful pairing
+  // NEVER store the temporary pairing code here
+  (game as Game).settings.register(moduleId, SETTING_WORLD_SECRET, {
     scope: "world",
     config: false,
     type: String,
     default: "",
   });
 
-  (game as Game).settings.register(moduleId, "pairedAt", {
+  // Temporary pairing code - cleared after use (success or failure)
+  // This is ONLY for the current pairing attempt
+  (game as Game).settings.register(moduleId, SETTING_PAIRING_CODE, {
+    scope: "world",
+    config: false,
+    type: String,
+    default: "",
+  });
+
+  // Metadata about the pairing attempt
+  (game as Game).settings.register(moduleId, SETTING_PAIRING_ATTEMPT, {
+    scope: "world",
+    config: false,
+    type: String,
+    default: "",
+  });
+
+  // Timestamp when the world was successfully paired
+  (game as Game).settings.register(moduleId, SETTING_PAIRED_AT, {
     scope: "world",
     config: false,
     type: String,
@@ -75,7 +99,7 @@ Hooks.on("renderActorDirectory", (_: Application, html: JQuery) => {
 
   const button = $(
     `<button class="harkonians-button" type="button" title="${(game as Game).i18n.localize("HARKONIANS.manageCharacters")}">
-      <img src="modules/${moduleId}/styles/favicon.ico" alt="Harkonians" width="24" height="24" />
+      <img src="modules/${moduleId}/favicon.ico" alt="Harkonians" width="24" height="24" />
     </button>`
   );
   button.on("click", () => {

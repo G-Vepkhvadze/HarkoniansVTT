@@ -6,18 +6,60 @@
     </button>
   </header>
 
-  {{#unless isPaired}}
-    <div class="warning-section">
-      <i class="fas fa-exclamation-triangle"></i>
-      <p>{{localize "HARKONIANS.worldNotPaired"}}</p>
-      {{#if isGM}}
-        <button id="pair-world" type="button" class="btn-primary">
-          <i class="fas fa-link"></i> {{localize "HARKONIANS.pairWorld"}}
+  {{!-- WORLD PAIRING SECTION --}}
+  <section class="world-pairing-section">
+    <h2>{{localize "HARKONIANS.worldPairing"}}</h2>
+    
+    {{#if isGM}}
+      {{#unless isPaired}}
+        <div class="warning-section">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div>
+            <p>{{localize "HARKONIANS.worldNotPaired"}}</p>
+            <p class="hint">{{localize "HARKONIANS.pairingCodeHint"}}</p>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="pairing-code-input">{{localize "HARKONIANS.pairingCodeLabel"}}</label>
+          <div class="input-with-button">
+            <input 
+              type="text" 
+              id="pairing-code-input" 
+              class="form-input"
+              placeholder="{{localize 'HARKONIANS.pairingCodePlaceholder'}}"
+              autocomplete="off"
+              autocapitalize="off"
+            />
+            <button id="submit-pairing-code" type="button" class="btn-primary" title="{{localize 'HARKONIANS.pairWorld'}}">
+              <i class="fas fa-link"></i>
+            </button>
+          </div>
+          <p class="hint">{{localize "HARKONIANS.pairingCodeWarning"}}</p>
+        </div>
+      {{else}}
+        <div class="status-indicator connected">
+          <i class="fas fa-check-circle"></i>
+          <span>{{localize "HARKONIANS.worldConnected"}}</span>
+        </div>
+        <button id="unpair-world" type="button" class="btn-danger btn-small">
+          <i class="fas fa-unlink"></i> {{localize "HARKONIANS.unpairWorld"}}
         </button>
-      {{/if}}
-    </div>
-  {{/unless}}
+        <button id="check-connection" type="button" class="btn-small">
+          <i class="fas fa-sync"></i> {{localize "HARKONIANS.checkConnection"}}
+        </button>
+      {{/unless}}
+    {{else}}
+      {{#unless isPaired}}
+        <div class="warning-section">
+          <i class="fas fa-info-circle"></i>
+          <p>{{localize "HARKONIANS.pairingRequiresGM"}}</p>
+        </div>
+      {{/unless}}
+    {{/if}}
+  </section>
 
+  {{!-- API KEY SECTION --}}
   <section class="api-key-section">
     <h2>{{localize "HARKONIANS.apiKeyLabel"}}</h2>
     <div class="form-group">
@@ -34,21 +76,53 @@
     </button>
   </section>
 
+  {{!-- CHARACTER MANAGER SECTION --}}
   {{#if hasCharacters}}
     <section class="characters-section">
       <h2>{{localize "HARKONIANS.yourCharacters"}}</h2>
+      {{#unless isPaired}}
+        <div class="warning-banner">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>{{localize "HARKONIANS.worldNotPairedWarning"}}</p>
+        </div>
+      {{/unless}}
       <div class="character-list">
         {{#each characters}}
-          <div class="character-card {{#if this.linked}}linked{{/if}}">
+          <div class="character-card {{#if this.linked}}linked{{/if}} status-{{this.connectionStatus}}">
             <img src="{{this.img}}" alt="{{this.name}}" class="char-portrait" />
-            <span class="char-name">{{this.name}}</span>
-            <div class="char-actions">
+            <div class="character-info">
+              <span class="char-name">{{this.name}}</span>
+              {{#if this.harkoniansCharacterName}}
+                <span class="harkonians-name">{{localize "HARKONIANS.asCharacter"}} {{this.harkoniansCharacterName}}</span>
+              {{/if}}
+              {{#if this.linkedAt}}
+                <span class="linked-date">{{localize "HARKONIANS.linkedAt"}} {{this.linkedAt}}</span>
+              {{/if}}
+            </div>
+            <div class="character-status">
               {{#if this.linked}}
-                <button class="btn-small open-store" type="button" data-actor-id="{{this.id}}">
-                  <i class="fas fa-shopping-cart"></i> {{localize "HARKONIANS.openStore"}}
+                <span class="status connected">
+                  <i class="fas fa-check-circle"></i> {{localize "HARKONIANS.connected"}}
+                </span>
+              {{else}}
+                <span class="status disconnected">
+                  <i class="fas fa-times-circle"></i> {{localize "HARKONIANS.notConnected"}}
+                </span>
+              {{/if}}
+            </div>
+            <div class="character-actions">
+              {{#if this.linked}}
+                <button class="btn-small open-store" type="button" data-actor-id="{{this.id}}" title="{{localize 'HARKONIANS.openStore'}}">
+                  <i class="fas fa-shopping-cart"></i>
+                </button>
+                <button class="btn-small sync-char" type="button" data-actor-id="{{this.id}}" title="{{localize 'HARKONIANS.syncCharacter'}}">
+                  <i class="fas fa-sync"></i>
+                </button>
+                <button class="btn-small btn-danger unlink-char" type="button" data-actor-id="{{this.id}}" title="{{localize 'HARKONIANS.unlinkCharacter'}}">
+                  <i class="fas fa-unlink"></i>
                 </button>
               {{else}}
-                <button class="btn-small btn-primary link-char" type="button" data-actor-id="{{this.id}}">
+                <button class="btn-small btn-primary link-char" type="button" data-actor-id="{{this.id}}" title="{{localize 'HARKONIANS.linkCharacter'}}">
                   <i class="fas fa-link"></i> {{localize "HARKONIANS.link"}}
                 </button>
               {{/if}}
@@ -58,8 +132,12 @@
       </div>
     </section>
   {{else}}
-    <div class="no-characters">
-      <p>{{localize "HARKONIANS.noCharacters"}}</p>
-    </div>
+    <section class="no-characters-section">
+      <div class="no-characters">
+        <i class="fas fa-user-slash"></i>
+        <p>{{localize "HARKONIANS.noCharacters"}}</p>
+        <p class="hint">{{localize "HARKONIANS.noCharactersHint"}}</p>
+      </div>
+    </section>
   {{/if}}
 </div>
