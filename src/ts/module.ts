@@ -2,6 +2,7 @@
 // code and not include them in the build output.
 import "../styles/style.scss";
 import DogBrowser from "./apps/dogBrowser";
+import HarkoniansConfig from "./apps/config";
 import { moduleId } from "./constants";
 import { MyModule } from "./types";
 
@@ -12,6 +13,29 @@ Hooks.once("init", () => {
 
   module = (game as Game).modules.get(moduleId) as MyModule;
   module.dogBrowser = new DogBrowser();
+  module.config = new HarkoniansConfig();
+
+  // Register the API key setting
+  (game as Game).settings.register(moduleId, "apiKey", {
+    name: (game as Game).i18n.localize("HARKONIANS.apiKeyLabel"),
+    hint: (game as Game).i18n.localize("HARKONIANS.apiKeyHint"),
+    scope: "world",
+    config: false,
+    type: String,
+    default: "",
+  });
+});
+
+Hooks.once("ready", () => {
+  // Add configuration button to the module settings
+  (game as Game).settings.registerMenu(moduleId, "harkoniansConfig", {
+    name: (game as Game).i18n.localize("HARKONIANS.configTitle"),
+    label: (game as Game).i18n.localize("HARKONIANS.configTitle"),
+    hint: (game as Game).i18n.localize("HARKONIANS.apiKeyHint"),
+    icon: "fas fa-cog",
+    type: HarkoniansConfig,
+    restricted: true,
+  });
 });
 
 Hooks.on("renderActorDirectory", (_: Application, html: JQuery) => {

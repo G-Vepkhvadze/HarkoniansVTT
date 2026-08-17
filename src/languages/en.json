@@ -2,5 +2,10 @@
   "MYMODULE.dog-browser": "Dog browser",
   "MYMODULE.dogs": "Dogs",
   "MYMODULE.fetch-random-dog": "Fetch random dog photo",
-  "MYMODULE.random-dog-alt": "Image of a random dog"
+  "MYMODULE.random-dog-alt": "Image of a random dog",
+  "HARKONIANS.configTitle": "Harkonians Store Connector Settings",
+  "HARKONIANS.apiKeyLabel": "API Key",
+  "HARKONIANS.apiKeyPlaceholder": "Enter your Harkonians store API key",
+  "HARKONIANS.apiKeyHint": "Get your API key from the Harkonians store and enter it here to connect.",
+  "HARKONIANS.saveButton": "Save Settings"
 }

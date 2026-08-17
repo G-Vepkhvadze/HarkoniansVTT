@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/foundryvtt-manifest.json",
-  "id": "foundry-module-ts",
-  "title": "Typescript Template Module",
-  "description": "A template module using Typescript. You should change name, title, and description in module.json.",
+  "id": "harkoniansvtt",
+  "title": "The Harkonians Store Connector Module",
+  "description": "A Lovely little module made for connecting Harkonians store to the FoundryVTT world.",
   "version": "1.0.0",
   "packs": [],
   "system": [],
