@@ -1,3 +1,4 @@
+// Keep existing dog browser styles for backward compatibility
 .window-app .window-content section.module-dog-picture-container {
   flex: 100;
   display: flex;
@@ -15,7 +16,463 @@
   }
 }
 
-// Harkonians Config Styling
+// ============================================
+// HARKONIANS COMMON STYLES
+// ============================================
+
+$harkonians-primary: #4a6baf;
+$harkonians-primary-dark: #3a5a9f;
+$harkonians-success: #28a745;
+$harkonians-warning: #ffc107;
+$harkonians-danger: #dc3545;
+$harkonians-info: #17a2b8;
+$harkonians-light: #f8f9fa;
+$harkonians-dark: #343a40;
+$harkonians-border: #dee2e6;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  i {
+    pointer-events: none;
+  }
+}
+
+.btn-primary {
+  @extend .btn;
+  background: $harkonians-primary;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background: $harkonians-primary-dark;
+  }
+}
+
+.btn-success {
+  @extend .btn;
+  background: $harkonians-success;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background: darken($harkonians-success, 10%);
+  }
+}
+
+.btn-danger {
+  @extend .btn;
+  background: $harkonians-danger;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background: darken($harkonians-danger, 10%);
+  }
+}
+
+.btn-small {
+  @extend .btn;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid $harkonians-border;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    
+    &:focus {
+      outline: none;
+      border-color: $harkonians-primary;
+      box-shadow: 0 0 0 3px rgba($harkonians-primary, 0.25);
+    }
+  }
+  
+  .hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 5px 0 0 0;
+    font-style: italic;
+  }
+}
+
+.checkbox-group {
+  margin: 10px 0;
+  
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+    cursor: pointer;
+    
+    input[type="checkbox"] {
+      margin: 0;
+    }
+  }
+}
+
+.flex-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid $harkonians-border;
+  background: $harkonians-light;
+  
+  .grow-header {
+    flex: 1;
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6c757d;
+  border-radius: 4px;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: $harkonians-dark;
+  }
+}
+
+// ============================================
+// WORLD PAIRING STYLES
+// ============================================
+.harkonians-world-pairing {
+  .pairing-section {
+    padding: 20px;
+    
+    .world-info {
+      margin-bottom: 20px;
+      
+      h2 {
+        margin: 0 0 15px;
+        font-size: 16px;
+        color: $harkonians-dark;
+        border-bottom: 1px solid $harkonians-border;
+        padding-bottom: 10px;
+      }
+      
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      
+      .info-item {
+        .label {
+          font-size: 12px;
+          color: #6c757d;
+        }
+        
+        .value {
+          font-weight: 500;
+          
+          &.code {
+            font-family: monospace;
+            font-size: 12px;
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+          }
+        }
+      }
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-weight: 500;
+      
+      &.paired {
+        background: rgba($harkonians-success, 0.1);
+        color: darken($harkonians-success, 20%);
+      }
+      
+      &.unpaired {
+        background: rgba($harkonians-warning, 0.1);
+        color: darken($harkonians-warning, 30%);
+      }
+    }
+    
+    .paired-details {
+      margin-bottom: 15px;
+      
+      p {
+        margin: 0;
+        font-size: 13px;
+        color: #6c757d;
+      }
+    }
+    
+    .actions {
+      margin: 15px 0;
+    }
+    
+    .credential-section {
+      margin-top: 15px;
+      padding: 15px;
+      background: $harkonians-light;
+      border-radius: 6px;
+      border: 1px solid $harkonians-border;
+      
+      p {
+        margin: 0 0 10px;
+        font-size: 14px;
+      }
+    }
+  }
+  
+  .settings-section {
+    padding: 20px;
+    border-top: 1px solid $harkonians-border;
+    
+    h2 {
+      margin: 0 0 15px;
+      font-size: 16px;
+      color: $harkonians-dark;
+    }
+  }
+}
+
+// ============================================
+// CHARACTER MANAGER STYLES
+// ============================================
+.harkonians-character-manager {
+  .warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 20px;
+    background: rgba($harkonians-warning, 0.1);
+    border: 1px solid $harkonians-warning;
+    border-radius: 6px;
+    margin: 20px;
+    
+    i {
+      color: $harkonians-warning;
+      font-size: 18px;
+    }
+    
+    p {
+      margin: 0;
+      flex: 1;
+    }
+    
+    button {
+      margin-left: auto;
+    }
+  }
+  
+  .no-characters {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    
+    i {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    p {
+      margin: 5px 0;
+    }
+    
+    .hint {
+      font-size: 13px;
+      font-style: italic;
+    }
+  }
+  
+  .character-list {
+    padding: 15px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  
+  .character-card {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: white;
+    border: 2px solid $harkonians-border;
+    border-radius: 8px;
+    transition: all 0.2s;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    &:hover {
+      border-color: $harkonians-primary;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    &.linked {
+      border-color: $harkonians-success;
+      background: rgba($harkonians-success, 0.02);
+    }
+    
+    .character-portrait {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid $harkonians-border;
+      margin-right: 12px;
+    }
+    
+    .character-info {
+      flex: 1;
+      min-width: 0;
+      
+      .character-name {
+        margin: 0 0 4px;
+        font-size: 15px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .character-id {
+        font-size: 11px;
+        color: #6c757d;
+        font-family: monospace;
+      }
+    }
+    
+    .character-status {
+      flex: 0 0 200px;
+      
+      .balance {
+        margin-bottom: 4px;
+        
+        .label {
+          font-size: 11px;
+          color: #6c757d;
+          display: block;
+        }
+        
+        .value {
+          font-size: 14px;
+          font-weight: 600;
+          color: $harkonians-primary;
+        }
+      }
+      
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        
+        &.connected {
+          background: rgba($harkonians-success, 0.1);
+          color: $harkonians-success;
+        }
+        
+        &.disconnected {
+          background: rgba($harkonians-danger, 0.1);
+          color: $harkonians-danger;
+        }
+        
+        &.warning {
+          background: rgba($harkonians-warning, 0.1);
+          color: darken($harkonians-warning, 30%);
+        }
+      }
+      
+      .pending-badge {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 2px 6px;
+        background: $harkonians-info;
+        color: white;
+        font-size: 10px;
+        border-radius: 10px;
+        font-weight: 500;
+      }
+    }
+    
+    .character-actions {
+      display: flex;
+      gap: 4px;
+      margin-left: 12px;
+    }
+  }
+  
+  .manager-footer {
+    display: flex;
+    justify-content: center;
+    padding: 15px;
+    border-top: 1px solid $harkonians-border;
+    background: $harkonians-light;
+  }
+}
+
+// ============================================
+// HARKONIANS BUTTON STYLES
+// ============================================
+.harkonians-pair-button,
+.harkonians-char-button {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  img {
+    border-radius: 4px;
+    object-fit: contain;
+  }
+}
+
+// ============================================
+// LEGACY CONFIG STYLES
+// ============================================
 .harkonians-config {
   .settings-section {
     margin: 15px 0;
@@ -54,14 +511,14 @@
     
     .submit-button {
       padding: 8px 16px;
-      background: #4a6baf;
+      background: $harkonians-primary;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
       
       &:hover {
-        background: #3a5a9f;
+        background: $harkonians-primary-dark;
       }
     }
   }

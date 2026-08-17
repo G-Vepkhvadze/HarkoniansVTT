@@ -7,16 +7,14 @@ const moduleVersion = process.env.MODULE_VERSION;
 const githubProject = process.env.GH_PROJECT;
 const githubTag = process.env.GH_TAG;
 
-console.log(process.env.VSCODE_INJECTION);
-
 export default defineConfig({
   build: {
     sourcemap: true,
+    outDir: "dist",
     rollupOptions: {
       input: "src/ts/module.ts",
       output: {
-        dir: undefined,
-        file: "dist/scripts/module.js",
+        entryFileNames: "scripts/module.js",
         format: "es",
       },
     },
@@ -32,6 +30,7 @@ export default defineConfig({
       targets: [
         { src: "src/languages", dest: "dist" },
         { src: "src/templates", dest: "dist" },
+        { src: "src/styles/favicon.ico", dest: "dist" },
       ],
       hook: "writeBundle",
     }),
@@ -61,7 +60,7 @@ function updateModuleManifestPlugin(): Plugin {
         if (githubTag) {
           manifestJson[
             "download"
-          ] = `${baseUrl}/download/${githubTag}/module.zip`;
+          ] = `${baseUrl}/download/${githubTag}/harkoniansvtt.zip`;
         }
       }
       await fsPromises.writeFile(

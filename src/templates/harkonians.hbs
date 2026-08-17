@@ -1,0 +1,65 @@
+<div class="harkonians-app">
+  <header class="flex-header">
+    <h1 class="grow-header">{{localize "HARKONIANS.characterManagerTitle"}}</h1>
+    <button class="close-button" type="button">
+      <i class="fas fa-times"></i>
+    </button>
+  </header>
+
+  {{#unless isPaired}}
+    <div class="warning-section">
+      <i class="fas fa-exclamation-triangle"></i>
+      <p>{{localize "HARKONIANS.worldNotPaired"}}</p>
+      {{#if isGM}}
+        <button id="pair-world" type="button" class="btn-primary">
+          <i class="fas fa-link"></i> {{localize "HARKONIANS.pairWorld"}}
+        </button>
+      {{/if}}
+    </div>
+  {{/unless}}
+
+  <section class="api-key-section">
+    <h2>{{localize "HARKONIANS.apiKeyLabel"}}</h2>
+    <div class="form-group">
+      <input 
+        type="password" 
+        id="api-key-input" 
+        class="form-input"
+        value="{{apiKey}}"
+        placeholder="{{localize 'HARKONIANS.apiKeyPlaceholder'}}"
+      />
+    </div>
+    <button id="save-api-key" type="button" class="btn-success">
+      <i class="fas fa-save"></i> {{localize "HARKONIANS.saveButton"}}
+    </button>
+  </section>
+
+  {{#if hasCharacters}}
+    <section class="characters-section">
+      <h2>{{localize "HARKONIANS.yourCharacters"}}</h2>
+      <div class="character-list">
+        {{#each characters}}
+          <div class="character-card {{#if this.linked}}linked{{/if}}">
+            <img src="{{this.img}}" alt="{{this.name}}" class="char-portrait" />
+            <span class="char-name">{{this.name}}</span>
+            <div class="char-actions">
+              {{#if this.linked}}
+                <button class="btn-small open-store" type="button" data-actor-id="{{this.id}}">
+                  <i class="fas fa-shopping-cart"></i> {{localize "HARKONIANS.openStore"}}
+                </button>
+              {{else}}
+                <button class="btn-small btn-primary link-char" type="button" data-actor-id="{{this.id}}">
+                  <i class="fas fa-link"></i> {{localize "HARKONIANS.link"}}
+                </button>
+              {{/if}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    </section>
+  {{else}}
+    <div class="no-characters">
+      <p>{{localize "HARKONIANS.noCharacters"}}</p>
+    </div>
+  {{/if}}
+</div>

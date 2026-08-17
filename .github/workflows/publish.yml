@@ -1,8 +1,9 @@
-name: Publish release
+name: Build and Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   build:
@@ -27,22 +28,40 @@ jobs:
         env:
           MODULE_VERSION: ${{steps.get_version.outputs.version-without-v}}
           GH_PROJECT: ${{github.repository}}
-          GH_TAG: ${{github.event.release.tag_name}}
+          GH_TAG: ${{github.ref_name}}
         run: yarn build
 
-      - name: Create zip archive
-        working-directory: dist
-        run: zip -r ./module.zip module.json style.css scripts/ templates/ languages/
+      - name: Copy favicon to dist
+        run: cp src/styles/favicon.ico dist/
 
-      - name: Update release with files
-        id: create_version_release
-        uses: ncipollo/release-action@v1
+      - name: Remove sourcemaps from dist
+        run: find dist -name "*.map" -delete
+
+      - name: Create module directory structure
+        run: |
+          mkdir -p harkoniansvtt
+          cp -r dist/* harkoniansvtt/
+
+      - name: Create zip archive
+        run: zip -r harkoniansvtt.zip harkoniansvtt/
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
         with:
-          allowUpdates: true # Set this to false if you want to prevent updating existing releases
-          name: ${{ github.event.release.name }}
-          draft: ${{ github.event.release.unpublished }}
-          prerelease: ${{ github.event.release.prerelease }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: "./dist/module.json, ./dist/module.zip"
-          tag: ${{ github.event.release.tag_name }}
-          body: ${{ github.event.release.body }}
+          tag_name: ${{github.ref_name}}
+          name: Release ${{github.ref_name}}
+          body: |
+            Automated release for HarkoniansVTT module version ${{steps.get_version.outputs.version-without-v}}.
+            
+            **Manifest URL:** https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/latest/download/module.json
+            
+            **Installation:** Use Foundry's "Install Module → Manifest URL" and enter the manifest URL above.
+          draft: false
+          prerelease: false
+          files: |
+            dist/module.json
+            harkoniansvtt.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

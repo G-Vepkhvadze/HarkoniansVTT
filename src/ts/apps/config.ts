@@ -12,7 +12,8 @@ export default class HarkoniansConfig extends FormApplication {
     }) as FormApplicationOptions;
   }
 
-  override getData(options?: Partial<FormApplicationOptions> | undefined): object | Promise<object> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  override getData(_options?: Partial<FormApplicationOptions> | undefined): any {
     return {
       apiKey: (game as Game).settings.get(moduleId, "apiKey"),
     };
