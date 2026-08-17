@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/foundryvtt-manifest.json",
   "id": "harkoniansvtt",
-  "title": "The Harkonians Store Connector Module",
+  "title": "HarkoniansVTT",
   "description": "A Lovely little module made for connecting Harkonians store to the FoundryVTT world.",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "url": "https://github.com/G-Vepkhvadze/HarkoniansVTT",
   "manifest": "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/latest/download/module.json",
   "download": "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/latest/download/harkoniansvtt.zip",
