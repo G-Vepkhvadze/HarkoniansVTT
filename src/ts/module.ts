@@ -91,22 +91,52 @@ Hooks.once("ready", () => {
     type: HarkoniansConfig as any,
     restricted: true,
   });
-});
 
-Hooks.on("renderActorDirectory", (_: Application, html: JQuery) => {
-  const user = (game as Game).user;
-  
-  if (!user) return;
-
-  const button = $(
-    `<button class="harkonians-button" type="button" title="${(game as Game).i18n.localize("HARKONIANS.manageCharacters")}">
+  // Create center-screen button
+  const centerButton = $(
+    `<button class="harkonians-button harkonians-center-button" type="button" title="${(game as Game).i18n.localize("HARKONIANS.manageCharacters")}">
       <img src="modules/${moduleId}/favicon.ico" alt="Harkonians" width="24" height="24" />
     </button>`
   );
-  button.on("click", () => {
+  $("body").append(centerButton);
+  
+  centerButton.css({
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    zIndex: "9999",
+    width: "50px",
+    height: "50px",
+    borderRadius: "50%",
+    background: "rgba(0, 0, 0, 0.7)",
+    border: "2px solid #fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    boxShadow: "0 0 10px rgba(255, 255, 255, 0.5)",
+    transition: "transform 0.2s, box-shadow 0.2s",
+  });
+  
+  centerButton.hover(
+    () => {
+      centerButton.css({
+        transform: "translate(-50%, -50%) scale(1.1)",
+        boxShadow: "0 0 20px rgba(255, 255, 255, 0.8)",
+      });
+    },
+    () => {
+      centerButton.css({
+        transform: "translate(-50%, -50%) scale(1)",
+        boxShadow: "0 0 10px rgba(255, 255, 255, 0.5)",
+      });
+    }
+  );
+  
+  centerButton.on("click", () => {
     module.harkoniansApp?.render(true);
   });
-  html.find(".directory-header .action-buttons").append(button);
 });
 
 // Add publish button to D&D 5e Item sheets
