@@ -3,7 +3,7 @@
   "id": "harkoniansvtt",
   "title": "HarkoniansVTT",
   "description": "A Lovely little module made for connecting Harkonians store to the FoundryVTT world.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "url": "https://github.com/G-Vepkhvadze/HarkoniansVTT",
   "manifest": "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/latest/download/module.json",
   "download": "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/latest/download/harkoniansvtt.zip",
@@ -13,13 +13,17 @@
     }
   ],
   "compatibility": {
-    "minimum": "13",
+    "minimum": "12",
     "verified": "13",
-    "maximum": "13"
+    "maximum": "14"
   },
   "packs": [],
   "system": [],
-  "dependencies": [],
+  "dependencies": [
+    {
+      "name": "lib-df-buttons"
+    }
+  ],
   "scripts": [],
   "languages": [
     {

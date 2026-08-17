@@ -92,61 +92,19 @@ Hooks.once("ready", () => {
     restricted: true,
   });
 
-  // Create center-screen button
-  const centerButton = $(`
-  <button
-    id="harkonians-center-button"
-    type="button"
-    title="Harkonians"
-  >
-    Harkonians
-  </button>
-`);
 
-  $("body").append(centerButton);
-
-  centerButton.on("click", () => {
-    console.log("Harkonians button clicked");
-    module.harkoniansApp?.render(true);
-  });
-  
-  centerButton.css({
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    zIndex: "9999",
-    width: "50px",
-    height: "50px",
-    borderRadius: "50%",
-    background: "rgba(0, 0, 0, 0.7)",
-    border: "2px solid #fff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    boxShadow: "0 0 10px rgba(255, 255, 255, 0.5)",
-    transition: "transform 0.2s, box-shadow 0.2s",
-  });
-  
-  centerButton.hover(
-    () => {
-      centerButton.css({
-        transform: "translate(-50%, -50%) scale(1.1)",
-        boxShadow: "0 0 20px rgba(255, 255, 255, 0.8)",
-      });
+// Register Harkonians button with lib-df-buttons
+Hooks.on("getModuleTools", (_controlManager: unknown, tools: Record<string, unknown>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (tools as any).harkonians = {
+    icon: "fas fa-user",
+    title: (game as Game).i18n.localize("HARKONIANS.manageCharacters"),
+    type: "button",
+    onClick: () => {
+      module.harkoniansApp?.render(true);
     },
-    () => {
-      centerButton.css({
-        transform: "translate(-50%, -50%) scale(1)",
-        boxShadow: "0 0 10px rgba(255, 255, 255, 0.5)",
-      });
-    }
-  );
-  
-  centerButton.on("click", () => {
-    module.harkoniansApp?.render(true);
-  });
+  };
+});
 });
 
 // Add publish button to D&D 5e Item sheets
