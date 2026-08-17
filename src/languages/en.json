@@ -86,5 +86,53 @@
   "HARKONIANS.worldCredentialLabel": "World Credential",
   "HARKONIANS.worldCredentialHint": "Secret credential for authenticating this world with Harkonians",
   
-  "HARKONIANS.close": "Close"
+  "HARKONIANS.close": "Close",
+  
+  // Publish to Store strings
+  "HARKONIANS.publishToStore": "Add to Harkonians Store",
+  "HARKONIANS.updateStoreItem": "Update Harkonians Store Item",
+  "HARKONIANS.publishItem": "Publish Item",
+  "HARKONIANS.updateItem": "Update Item",
+  
+  "HARKONIANS.itemInformation": "Item Information",
+  "HARKONIANS.name": "Name",
+  "HARKONIANS.type": "Type",
+  "HARKONIANS.description": "Description",
+  "HARKONIANS.itemDataWillBePreserved": "All Item data (system, effects, activities, etc.) will be preserved.",
+  
+  "HARKONIANS.storeMetadata": "Store Metadata",
+  "HARKONIANS.price": "Price",
+  "HARKONIANS.priceRequired": "Please enter a valid price",
+  "HARKONIANS.priceHint": "The price players will pay for this item in the store",
+  
+  "HARKONIANS.cp": "CP",
+  "HARKONIANS.sp": "SP",
+  "HARKONIANS.ep": "EP",
+  "HARKONIANS.gp": "GP",
+  "HARKONIANS.pp": "PP",
+  
+  "HARKONIANS.stock": "Stock",
+  "HARKONIANS.stockRequired": "Please enter a valid stock quantity or select unlimited",
+  "HARKONIANS.stockHint": "How many of this item are available in the store",
+  "HARKONIANS.unlimited": "Unlimited",
+  
+  "HARKONIANS.storeDescriptionOverride": "Store Description Override",
+  "HARKONIANS.storeDescriptionPlaceholder": "Optional custom description for the store listing...",
+  "HARKONIANS.storeDescriptionHint": "Overrides the Item's description in the store. Leave empty to use the Item's description.",
+  
+  "HARKONIANS.storeImageOverride": "Store Image Override",
+  "HARKONIANS.storeImagePlaceholder": "https://example.com/image.jpg",
+  "HARKONIANS.storeImageHint": "Optional image URL for the store listing. Leave empty to use the Item's image.",
+  
+  "HARKONIANS.publishSuccess": "{name} has been published to Harkonians Store (ID: {storeItemId})",
+  "HARKONIANS.publishFailed": "Failed to publish item to Harkonians Store",
+  "HARKONIANS.publishing": "Publishing to Harkonians Store...",
+  
+  "HARKONIANS.cannotPublish": "You cannot publish items. Only the GM can publish, and the world must be paired with Harkonians.",
+  "HARKONIANS.itemNotFound": "Item not found",
+  
+  "HARKONIANS.cancel": "Cancel",
+  
+  // Currency denominations (already defined above)
+  "HARKONIANS.denominationRequired": "Please select a currency denomination"
 }

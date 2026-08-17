@@ -10,6 +10,46 @@ export interface PairingConfirmRequest {
   foundryWorldId: string;
 }
 
+export type CurrencyDenomination = "cp" | "sp" | "ep" | "gp" | "pp";
+
+export interface PublishStoreItemRequest {
+  foundryWorldId: string;
+  foundryItemId: string;
+  foundryItemUuid: string;
+  foundrySystemId: string;
+  foundrySystemVersion: string;
+  
+  name: string;
+  type: string;
+  img?: string;
+  
+  // Store metadata
+  price: number;
+  denomination: CurrencyDenomination;
+  stock: number | null; // null = unlimited
+  
+  // Optional overrides
+  storeDescription?: string;
+  storeImage?: string;
+  
+  // Complete Foundry Item data
+  foundryItemData: object;
+}
+
+export interface PublishStoreItemResponse {
+  success: boolean;
+  storeItemId?: string;
+  name?: string;
+  error?: string;
+  message?: string;
+}
+
+export interface StoreItemFlagData {
+  storeItemId: string;
+  publishedAt: string;
+  lastUpdatedAt?: string;
+}
+
 export interface PairingConfirmResponse {
   success: boolean;
   worldSecret?: string;
@@ -78,6 +118,9 @@ export const SETTING_PAIRED_AT = "pairedAt";
 // Character credential storage (actor-scoped via flags)
 export const FLAG_CONNECTION = "connection";
 export const FLAG_CHARACTER_TOKEN = "characterToken"; // Stored securely
+
+// Item store publication flag
+export const FLAG_STORE_ITEM = "storeItem";
 
 export interface HarkoniansConnectionData {
   harkoniansCharacterId?: string;
@@ -634,5 +677,208 @@ export class HarkoniansAPIClient {
     
     await actor.setFlag(moduleId, FLAG_CONNECTION, connectionData);
     await this.storeCharacterToken(actorId, characterToken, tokenExpiresAt);
+  }
+
+  /**
+   * Publish an Item to the Harkonians store
+   */
+  async publishStoreItem(
+    item: Item,
+    storeMetadata: {
+      price: number;
+      denomination: CurrencyDenomination;
+      stock: number | null;
+      storeDescription?: string;
+      storeImage?: string;
+    }
+  ): Promise<PublishStoreItemResponse> {
+    const worldSecret = await this.getWorldSecret();
+    
+    if (!worldSecret) {
+      return {
+        success: false,
+        error: "World is not paired with Harkonians. Please pair the world first.",
+      };
+    }
+    
+    const worldId = (game as Game).world?.id || "";
+    const systemData = (game as Game).system;
+    
+    // Sanitize the Item data - remove document-instance fields
+    const sanitizedItemData = this.sanitizeItemForExport(item);
+    
+    const requestBody: PublishStoreItemRequest = {
+      foundryWorldId: worldId,
+      foundryItemId: item.id ?? "",
+      foundryItemUuid: item.uuid ?? "",
+      foundrySystemId: systemData.id,
+      foundrySystemVersion: (systemData as unknown as { version?: string }).version || "",
+      
+      name: item.name ?? "",
+      type: item.type ?? "",
+      img: item.img ?? undefined,
+      
+      price: storeMetadata.price,
+      denomination: storeMetadata.denomination,
+      stock: storeMetadata.stock,
+      
+      storeDescription: storeMetadata.storeDescription,
+      storeImage: storeMetadata.storeImage,
+      
+      foundryItemData: sanitizedItemData,
+    };
+    
+    // Check if this Item is already published
+    const existingFlag = item.getFlag(moduleId, FLAG_STORE_ITEM) as StoreItemFlagData | undefined;
+    
+    try {
+      const endpoint = existingFlag?.storeItemId 
+        ? `/api/foundry/store/items/${encodeURIComponent(existingFlag.storeItemId)}`
+        : `/api/foundry/store/items`;
+      
+      const method = existingFlag?.storeItemId ? "PUT" : "POST";
+      
+      const response = await this.request<PublishStoreItemResponse>(
+        endpoint,
+        {
+          method,
+          body: JSON.stringify(requestBody),
+        },
+        true // Include world secret
+      );
+      
+      // If successful and we got a storeItemId, store it in the Item flag
+      if (response.success && response.storeItemId) {
+        const flagData: StoreItemFlagData = {
+          storeItemId: response.storeItemId,
+          publishedAt: existingFlag?.publishedAt || new Date().toISOString(),
+          lastUpdatedAt: new Date().toISOString(),
+        };
+        
+        await item.setFlag(moduleId, FLAG_STORE_ITEM, flagData);
+      }
+      
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
+      // Map known error responses
+      if (errorMessage.includes("401")) {
+        return {
+          success: false,
+          error: "Your Harkonians authorization has expired.",
+        };
+      }
+      
+      if (errorMessage.includes("403")) {
+        return {
+          success: false,
+          error: "You are not authorized to publish Items for this world.",
+        };
+      }
+      
+      if (errorMessage.includes("404")) {
+        return {
+          success: false,
+          error: "The Harkonians world or campaign could not be found.",
+        };
+      }
+      
+      if (errorMessage.includes("409")) {
+        return {
+          success: false,
+          error: "An Item with this Harkonians source already exists.",
+        };
+      }
+      
+      if (errorMessage.includes("5") && errorMessage.includes("HTTP")) {
+        return {
+          success: false,
+          error: "Harkonians is temporarily unavailable.",
+        };
+      }
+      
+      return {
+        success: false,
+        error: `Failed to publish item: ${errorMessage}`,
+      };
+    }
+  }
+
+  /**
+   * Get store Item flag from an Item
+   */
+  getStoreItemFlag(item: Item): StoreItemFlagData | null {
+    const flag = item.getFlag(moduleId, FLAG_STORE_ITEM) as StoreItemFlagData | undefined;
+    return flag || null;
+  }
+
+  /**
+   * Sanitize Item data for export - remove document-instance fields
+   */
+  private sanitizeItemForExport(item: Item): object {
+    // Get the complete source data
+    const source = item.toObject(true) as Record<string, unknown>;
+    
+    // Create a copy we can safely modify
+    const sanitized: Record<string, unknown> = { ...source };
+    
+    // Remove instance-specific IDs (they may be null or string)
+    if ("_id" in sanitized) {
+      delete sanitized._id;
+    }
+    if ("id" in sanitized) {
+      delete sanitized.id;
+    }
+    
+    // Remove collection reference
+    if ("collection" in sanitized) {
+      delete sanitized.collection;
+    }
+    
+    // Remove ownership data
+    if ("ownership" in sanitized) {
+      delete sanitized.ownership;
+    }
+    
+    // Remove folder reference (instance-specific)
+    if ("folder" in sanitized) {
+      delete sanitized.folder;
+    }
+    
+    // Remove sort order
+    if ("sort" in sanitized) {
+      delete sanitized.sort;
+    }
+    
+    // Remove flags that are module-specific and not meant for export
+    if (sanitized.flags && typeof sanitized.flags === "object") {
+      const flags = { ...(sanitized.flags as Record<string, unknown>) };
+      
+      if (flags[moduleId] && typeof flags[moduleId] === "object") {
+        // Keep the storeItem flag if it exists
+        const moduleFlags = { ...(flags[moduleId] as Record<string, unknown>) };
+        // Remove temporary flags but keep storeItem
+        delete moduleFlags.pairingCode;
+        delete moduleFlags.worldSecret;
+        
+        if (Object.keys(moduleFlags).length > 0) {
+          flags[moduleId] = moduleFlags;
+        } else {
+          delete flags[moduleId];
+        }
+        
+        sanitized.flags = flags;
+      }
+    }
+    
+    return sanitized;
+  }
+
+  /**
+   * Check if an Item is already published to the store
+   */
+  async isItemPublished(item: Item): Promise<boolean> {
+    return !!this.getStoreItemFlag(item);
   }
 }

@@ -3,6 +3,7 @@
 import "../styles/style.scss";
 import HarkoniansConfig from "./apps/config";
 import HarkoniansApp from "./apps/harkonians";
+import PublishItemDialog from "./apps/publishItem";
 import { moduleId } from "./constants";
 import { MyModule } from "./types";
 import { 
@@ -106,4 +107,10 @@ Hooks.on("renderActorDirectory", (_: Application, html: JQuery) => {
     module.harkoniansApp?.render(true);
   });
   html.find(".directory-header .action-buttons").append(button);
+});
+
+// Add publish button to D&D 5e Item sheets
+Hooks.on("renderItemSheet", (sheet: Application, html: JQuery<HTMLElement>) => {
+  // Add the publish button
+  PublishItemDialog.addPublishButtonToSheet(sheet, html);
 });
