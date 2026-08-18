@@ -54,7 +54,7 @@ jobs:
 
           test -f harkoniansvtt/module.json
           test -f harkoniansvtt/scripts/main.js
-          test -f harkoniansvtt/harkonians.css
+          test -f harkoniansvtt/styles/harkonians.css
 
       - name: Create module ZIP
         run: |
