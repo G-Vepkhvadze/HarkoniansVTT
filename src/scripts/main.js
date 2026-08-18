@@ -98,31 +98,19 @@ const HandlebarsApplication = HandlebarsApplicationMixin(ApplicationV2);
 class HarkoniansApplication extends HandlebarsApplication {
     static namespace = 'harkoniansvtt';
 
-    static get defaultOptions() {
-        return {
-            ...(super.defaultOptions || {}),
-            classes: ['harkoniansvtt-window'],
-            window: { frame: true, positioned: true, resizable: true }
-        };
-    }
+    /**
+     * ApplicationV2 uses DEFAULT_OPTIONS (uppercase), not defaultOptions
+     */
+    static DEFAULT_OPTIONS = {
+        classes: ['harkoniansvtt-window'],
+        window: { frame: true, positioned: true, resizable: true },
+        actions: {}
+    };
 
-    async _prepareContext(_options) {
-        return { namespace: this.constructor.name };
-    }
-
-    activateListeners(html) {
-        super.activateListeners(html);
-        
-        const actions = this.constructor.DEFAULT_OPTIONS?.actions;
-        if (actions) {
-            for (const [actionName, handler] of Object.entries(actions)) {
-                html.find(`[data-action="${actionName}"]`).on('click', (event) => {
-                    event.preventDefault();
-                    handler.call(this, event);
-                });
-            }
-        }
-    }
+    /**
+     * V13 ApplicationV2 provides automatic action handling via DEFAULT_OPTIONS.actions
+     * No manual jQuery binding needed - remove activateListeners override
+     */
 }
 
 // ============================================
@@ -136,8 +124,8 @@ class HarkoniansLinkApp extends HarkoniansApplication {
         window: { frame: true, positioned: true, title: 'Harkonians' },
         position: { width: 500, height: 500 },
         actions: {
-            configure() { this.close(); new HarkoniansConfigApp().render({ force: true }); },
-            connect() { this.close(); new HarkoniansConfigApp().render({ force: true }); }
+            configure: function() { this.close(); new HarkoniansConfigApp().render({ force: true }); },
+            connect: function() { this.close(); new HarkoniansConfigApp().render({ force: true }); }
         }
     };
 
@@ -163,7 +151,7 @@ class HarkoniansConfigApp extends HarkoniansApplication {
         window: { frame: true, positioned: true, title: 'HarkoniansVTT Configuration' },
         position: { width: 600, height: 650 },
         actions: {
-            cancel() { this.close(); },
+            cancel: function() { this.close(); },
             async linkCharacter(event) {
                 const actorId = event.target.closest('[data-actor-id]')?.getAttribute('data-actor-id');
                 if (actorId) await this._linkCharacter(actorId);
@@ -252,11 +240,14 @@ class HarkoniansItemPicker extends HarkoniansApplication {
         window: { frame: true, positioned: true, title: 'Add Item to Harkonians' },
         position: { width: 650, height: 700 },
         actions: {
-            cancel() { this.close(); },
+            cancel: function() { this.close(); },
             async add() {
-                const input = this.element.querySelector('input[name="harkonians-item"]:checked');
-                if (!input) { ui.notifications.warn('Select an Item first.'); return; }
-                await this._addItem(input.value);
+                const selected = this.element.querySelector('input[name="harkonians-item"]:checked');
+                if (!selected) {
+                    ui.notifications.warn('Select an Item first.');
+                    return;
+                }
+                await this._addItem(selected.value);
             }
         }
     };
@@ -265,28 +256,44 @@ class HarkoniansItemPicker extends HarkoniansApplication {
 
     async _prepareContext(_options) {
         const items = game.items.contents
-            .map(item => ({
-                id: item.id, uuid: item.uuid, name: item.name, type: item.type, img: item.img,
-                alreadyLinked: Boolean(item.getFlag('harkoniansvtt', 'harkoniansItemId'))
+            .map(e => ({
+                id: e.id, uuid: e.uuid, name: e.name, type: e.type, img: e.img,
+                alreadyLinked: Boolean(e.getFlag('harkoniansvtt', 'harkoniansItemId'))
             }))
             .sort((a, b) => a.name.localeCompare(b.name));
+
         return { items };
     }
 
     async _addItem(itemId) {
         const item = game.items.get(itemId);
-        if (!item) { ui.notifications.error('The selected Item no longer exists.'); return; }
-        
-        const existing = item.getFlag('harkoniansvtt', 'harkoniansItemId');
-        if (existing) { ui.notifications.warn(`${item.name} is already linked to Harkonians.`); return; }
-        
-        if (!HarkoniansConnection.isConnected()) { ui.notifications.error('Connect to Harkonians before adding an Item.'); return; }
+        if (!item) {
+            ui.notifications.error('The selected Item no longer exists.');
+            return;
+        }
+        if (item.getFlag('harkoniansvtt', 'harkoniansItemId')) {
+            ui.notifications.warn(`${item.name} is already linked to Harkonians.`);
+            return;
+        }
+        if (!HarkoniansConnection.isConnected()) {
+            ui.notifications.error('Connect to Harkonians before adding an Item.');
+            return;
+        }
 
         try {
             const itemData = item.toObject();
             const payload = {
-                foundry: { worldId: game.world.id, itemId: item.id, itemUuid: item.uuid },
-                item: { name: item.name, type: item.type, img: item.img, system: itemData.system }
+                foundry: {
+                    worldId: game.world.id,
+                    itemId: item.id,
+                    itemUuid: item.uuid
+                },
+                item: {
+                    name: item.name,
+                    type: item.type,
+                    img: item.img,
+                    system: itemData.system
+                }
             };
             const result = await HarkoniansAPI.createItem(payload);
             await item.setFlag('harkoniansvtt', 'harkoniansItemId', result.id);
@@ -300,7 +307,7 @@ class HarkoniansItemPicker extends HarkoniansApplication {
 }
 
 // ============================================
-// SETTINGS REGISTRATION
+// HARKONIANS SETTINGS
 // ============================================
 
 class HarkoniansSettings {
@@ -331,20 +338,32 @@ class HarkoniansSidebarIntegration {
 
     static register() {
         const SidebarClass = CONFIG.ui.sidebar;
-        if (!SidebarClass) { console.error('HarkoniansVTT | Sidebar class unavailable.'); return; }
+        if (!SidebarClass) {
+            console.error('HarkoniansVTT | Sidebar class unavailable.');
+            return;
+        }
 
+        // Store original _getHeaderControls
         const originalGetHeaderControls = SidebarClass.prototype._getHeaderControls;
-        if (typeof originalGetHeaderControls !== 'function') { return; }
+        if (typeof originalGetHeaderControls !== 'function') return;
 
+        // Patch _getHeaderControls to add Harkonians button
         SidebarClass.prototype._getHeaderControls = function(...args) {
             const controls = originalGetHeaderControls.call(this, ...args);
-            controls.push({ action: 'harkonians', icon: 'fas fa-store', label: 'Harkonians', ownership: 'NONE' });
+            controls.push({
+                action: 'harkonians',
+                icon: 'fas fa-store',
+                label: 'Harkonians',
+                ownership: 'NONE'
+            });
             return controls;
         };
 
+        // Store original _onClickAction
         const originalOnClickAction = SidebarClass.prototype._onClickAction;
-        if (typeof originalOnClickAction !== 'function') { return; }
+        if (typeof originalOnClickAction !== 'function') return;
 
+        // Patch _onClickAction to handle Harkonians button click
         SidebarClass.prototype._onClickAction = function(event, target) {
             if (target?.dataset?.action === 'harkonians') {
                 event.preventDefault();
@@ -365,34 +384,48 @@ class HarkoniansItemDirectoryIntegration {
 
     static register() {
         const ItemDirectoryClass = CONFIG.ui.items;
-        if (!ItemDirectoryClass) { console.error('HarkoniansVTT | ItemDirectory unavailable.'); return; }
+        if (!ItemDirectoryClass) {
+            console.error('HarkoniansVTT | ItemDirectory class unavailable.');
+            return;
+        }
 
-        const originalGetHeaderButtons = ItemDirectoryClass.prototype._getHeaderButtons;
-        if (typeof originalGetHeaderButtons !== 'function') { return; }
+        // Store original _getHeaderControls
+        const originalGetHeaderControls = ItemDirectoryClass.prototype._getHeaderControls;
+        if (typeof originalGetHeaderControls !== 'function') return;
 
-        ItemDirectoryClass.prototype._getHeaderButtons = function() {
-            const buttons = originalGetHeaderButtons.call(this);
+        // Patch _getHeaderControls to add Harkonians button
+        ItemDirectoryClass.prototype._getHeaderControls = function(...args) {
+            const controls = originalGetHeaderControls.call(this, ...args);
+            
+            // Only add button for GM users who are connected
             if (game.user.isGM && HarkoniansConnection.isConnected()) {
-                buttons.push({ action: 'harkonians-add-item', icon: 'fas fa-store', label: 'Add Item to Harkonians' });
+                controls.add({
+                    action: 'harkonians-add-item',
+                    icon: 'fas fa-store',
+                    label: 'Add Item to Harkonians'
+                });
             }
-            return buttons;
+            
+            return controls;
         };
 
-        const originalOnClickHeaderButton = ItemDirectoryClass.prototype._onClickHeaderButton;
-        if (typeof originalOnClickHeaderButton === 'function') {
-            ItemDirectoryClass.prototype._onClickHeaderButton = function(event, button) {
-                if (button.action === 'harkonians-add-item') {
-                    event.preventDefault();
-                    if (game.user.isGM && HarkoniansConnection.isConnected()) {
-                        new HarkoniansItemPicker().render({ force: true });
-                    } else {
-                        ui.notifications.warn('Only the Game Master can add Items to Harkonians.');
-                    }
-                    return;
+        // Store original _onClickAction
+        const originalOnClickAction = ItemDirectoryClass.prototype._onClickAction;
+        if (typeof originalOnClickAction !== 'function') return;
+
+        // Patch _onClickAction to handle Harkonians button click
+        ItemDirectoryClass.prototype._onClickAction = function(event, target) {
+            if (target?.dataset?.action === 'harkonians-add-item') {
+                event.preventDefault();
+                if (game.user.isGM && HarkoniansConnection.isConnected()) {
+                    new HarkoniansItemPicker().render({ force: true });
+                } else {
+                    ui.notifications.warn('Only the Game Master can add Items to Harkonians.');
                 }
-                return originalOnClickHeaderButton.call(this, event, button);
-            };
-        }
+                return;
+            }
+            return originalOnClickAction.call(this, event, target);
+        };
     }
 }
 
@@ -405,6 +438,7 @@ Hooks.once('init', () => {
     console.log('HarkoniansVTT | ItemDirectory:', CONFIG.ui.items);
     console.log('HarkoniansVTT | Sidebar:', CONFIG.ui.sidebar);
 
+    // Version check - only V13 supported
     if (!game.version.startsWith('13.')) {
         ui.notifications.error('HarkoniansVTT requires Foundry VTT V13.');
         return;
@@ -417,5 +451,9 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', async () => {
     console.log('HarkoniansVTT | Ready');
-    try { await HarkoniansConnection.initialize(); } catch (error) { console.error(error); }
+    try {
+        await HarkoniansConnection.initialize();
+    } catch (error) {
+        console.error(error);
+    }
 });
