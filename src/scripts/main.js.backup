@@ -4,34 +4,6 @@
  */
 
 // ============================================
-// HARKONIANS WORLD SECRET MANAGER
-// ============================================
-
-class HarkoniansWorldSecret {
-    static namespace = 'harkoniansvtt';
-
-    static getWorldSecret() {
-        return game.world?.getFlag(this.namespace, 'worldSecret') ?? null;
-    }
-
-    static isConfigured() {
-        return Boolean(this.getWorldSecret());
-    }
-
-    static async setWorldSecret(secret) {
-        if (!game.world) throw new Error('No active world');
-        await game.world.setFlag(this.namespace, 'worldSecret', secret);
-        console.log('HarkoniansVTT | World secret configured');
-    }
-
-    static async removeWorldSecret() {
-        if (!game.world) return;
-        await game.world.unsetFlag(this.namespace, 'worldSecret');
-        console.log('HarkoniansVTT | World secret removed');
-    }
-}
-
-// ============================================
 // HARKONIANS CONNECTION MANAGER
 // ============================================
 
@@ -40,10 +12,6 @@ class HarkoniansConnection {
 
     static async initialize() {
         console.log('HarkoniansVTT | Connection manager initialized');
-        if (!HarkoniansWorldSecret.isConfigured()) {
-            console.warn('HarkoniansVTT | World secret not configured. API calls will fail.');
-            ui.notifications?.warn('HarkoniansVTT: World secret not configured. Configure in module settings.');
-        }
     }
 
     static getConnection() {
@@ -56,10 +24,6 @@ class HarkoniansConnection {
 
     static getUserId() {
         return this.getConnection()?.userId ?? null;
-    }
-
-    static getToken() {
-        return this.getConnection()?.token ?? null;
     }
 
     static async saveConnection(connection) {
@@ -78,59 +42,36 @@ class HarkoniansConnection {
 class HarkoniansAPI {
     static baseURL = 'https://api.harkonians.quest/v1';
 
-    static getAuthHeaders() {
-        const headers = { 'Content-Type': 'application/json' };
-        const worldSecret = HarkoniansWorldSecret.getWorldSecret();
-        if (worldSecret) headers['x-foundry-world-secret'] = worldSecret;
-        const token = HarkoniansConnection.getToken();
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        return headers;
-    }
-
     static async request(endpoint, options = {}) {
-        if (endpoint.startsWith('/api/foundry/') && !HarkoniansWorldSecret.getWorldSecret() && endpoint !== '/api/foundry/health') {
-            console.warn('HarkoniansVTT | API request to Foundry endpoint without world secret:', endpoint);
-        }
-
         const response = await fetch(
             `${this.baseURL}${endpoint}`,
             {
                 ...options,
-                headers: { ...this.getAuthHeaders(), ...(options.headers ?? {}) }
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(options.headers ?? {})
+                }
             }
         );
 
         if (!response.ok) {
-            let errorMsg = `Harkonians API error: ${response.status}`;
-            try {
-                const errorData = await response.json();
-                if (errorData.error) errorMsg = errorData.error;
-            } catch (e) {}
-            throw new Error(errorMsg);
+            throw new Error(`Harkonians API error: ${response.status}`);
         }
 
-        try {
-            return await response.json();
-        } catch (e) {
-            return null;
-        }
+        return response.json();
     }
 
     static async linkAccount(token) {
         return this.request('/api/foundry/user/link', {
             method: 'POST',
-            body: JSON.stringify({ token }),
-            headers: { 'Content-Type': 'application/json' }
+            body: JSON.stringify({ token })
         });
     }
 
     static async linkCharacter(data) {
-        return this.request('/api/foundry/link', {
+        return this.request('/api/foundry/character/link', {
             method: 'POST',
-            body: JSON.stringify({
-                foundryWorldId: data.foundryWorldId,
-                foundryActorId: data.foundryActorId
-            })
+            body: JSON.stringify(data)
         });
     }
 
@@ -167,6 +108,13 @@ class HarkoniansAPI {
         });
     }
 
+    static async receiveItem(itemData) {
+        return this.request('/api/foundry/items/receive', {
+            method: 'POST',
+            body: JSON.stringify(itemData)
+        });
+    }
+
     static async updateItemStock(itemId, stock) {
         return this.request(`/api/foundry/items/${itemId}/stock`, {
             method: 'PUT',
@@ -176,17 +124,6 @@ class HarkoniansAPI {
 
     static async getWorldItems() {
         return this.request(`/api/foundry/items?worldId=${game.world.id}`);
-    }
-
-    static async verifyWorldSecret(secret) {
-        try {
-            const response = await fetch(`${this.baseURL}/api/foundry/health`, {
-                headers: { 'x-foundry-world-secret': secret }
-            });
-            return response.ok;
-        } catch (error) {
-            return false;
-        }
     }
 }
 
@@ -219,12 +156,6 @@ class HarkoniansGoldSync {
             const harkoniansData = actor.getFlag(this.namespace, 'character');
             if (!harkoniansData?.actorId) {
                 console.debug('HarkoniansVTT | Actor not linked to Harkonians:', actor.name);
-                return;
-            }
-
-            // Check if world secret is configured
-            if (!HarkoniansWorldSecret.isConfigured()) {
-                console.warn('HarkoniansVTT | World secret not configured, cannot sync gold');
                 return;
             }
 
@@ -345,11 +276,6 @@ class HarkoniansItemSync {
                         harkoniansId: item.getFlag(this.namespace, 'harkoniansItemId')
                     });
                     continue;
-                }
-
-                // Check if world secret is configured
-                if (!HarkoniansWorldSecret.isConfigured()) {
-                    throw new Error('World secret not configured');
                 }
 
                 // Extract item data
@@ -480,67 +406,6 @@ class HarkoniansApplication extends HandlebarsApplication {
 }
 
 // ============================================
-// HARKONIANS WORLD CONFIG APPLICATION
-// ============================================
-
-class HarkoniansWorldConfigApp extends HarkoniansApplication {
-    static DEFAULT_OPTIONS = {
-        id: 'harkonians-world-config',
-        classes: ['harkoniansvtt-window'],
-        window: { frame: true, positioned: true, title: 'Harkonians World Configuration' },
-        position: { width: 500, height: 300 },
-        actions: {
-            save: function() { this._saveWorldSecret(); },
-            cancel: function() { this.close(); }
-        }
-    };
-
-    static PARTS = { main: { template: 'modules/harkoniansvtt/templates/harkonians-world-config.hbs' } };
-
-    async _prepareContext(_options) {
-        const worldSecret = HarkoniansWorldSecret.getWorldSecret();
-        return {
-            worldSecret: worldSecret ? '********' : null,
-            isConfigured: Boolean(worldSecret),
-            hasWorldSecret: Boolean(worldSecret),
-            worldId: game.world.id
-        };
-    }
-
-    async _saveWorldSecret() {
-        const secretInput = this.element.querySelector('[name="worldSecret"]');
-        if (!secretInput) {
-            ui.notifications.error('Could not find world secret input.');
-            return;
-        }
-        const secret = secretInput.value.trim();
-        if (!secret) {
-            try {
-                await HarkoniansWorldSecret.removeWorldSecret();
-                ui.notifications.info('World secret removed.');
-                this.close();
-            } catch (error) {
-                ui.notifications.error('Failed to remove world secret.');
-            }
-            return;
-        }
-        try {
-            const isValid = await HarkoniansAPI.verifyWorldSecret(secret);
-            if (!isValid) {
-                ui.notifications.error('Invalid world secret. Please check the secret and try again.');
-                return;
-            }
-            await HarkoniansWorldSecret.setWorldSecret(secret);
-            ui.notifications.info('World secret configured successfully!');
-            this.close();
-        } catch (error) {
-            console.error('HarkoniansVTT | World secret verification error:', error);
-            ui.notifications.error('Failed to verify world secret. Please check your connection.');
-        }
-    }
-}
-
-// ============================================
 // HARKONIANS LINK APPLICATION
 // ============================================
 
@@ -552,12 +417,7 @@ class HarkoniansLinkApp extends HarkoniansApplication {
         position: { width: 500, height: 500 },
         actions: {
             configure: function() { this.close(); new HarkoniansConfigApp().render({ force: true }); },
-            connect: function() { this.close(); new HarkoniansConfigApp().render({ force: true }); },
-            worldConfig: function() {
-                this.close();
-                if (game.user.isGM) new HarkoniansWorldConfigApp().render({ force: true });
-                else ui.notifications.warn('Only the Game Master can configure the world secret.');
-            }
+            connect: function() { this.close(); new HarkoniansConfigApp().render({ force: true }); }
         }
     };
 
@@ -567,9 +427,7 @@ class HarkoniansLinkApp extends HarkoniansApplication {
         const connection = HarkoniansConnection.getConnection();
         return {
             connected: Boolean(connection?.userId),
-            account: connection,
-            worldConfigured: HarkoniansWorldSecret.isConfigured(),
-            isGM: game.user.isGM
+            account: connection
         };
     }
 }
@@ -591,12 +449,7 @@ class HarkoniansConfigApp extends HarkoniansApplication {
                 if (actorId) await this._linkCharacter(actorId);
             },
             async testConnection() { await this._testConnection(); },
-            async disconnect() { await this._disconnect(); },
-            worldConfig: function() {
-                this.close();
-                if (game.user.isGM) new HarkoniansWorldConfigApp().render({ force: true });
-                else ui.notifications.warn('Only the Game Master can configure the world secret.');
-            }
+            async disconnect() { await this._disconnect(); }
         }
     };
 
@@ -616,9 +469,7 @@ class HarkoniansConfigApp extends HarkoniansApplication {
             account: connection,
             characters,
             userCharacter: game.user.getFlag('harkoniansvtt', 'character'),
-            hasCharacters: characters.length > 0,
-            worldConfigured: HarkoniansWorldSecret.isConfigured(),
-            isGM: game.user.isGM
+            hasCharacters: characters.length > 0
         };
     }
 
@@ -627,17 +478,16 @@ class HarkoniansConfigApp extends HarkoniansApplication {
         if (!actor) { ui.notifications.error('Character not found.'); return; }
         if (!actor.isOwner) { ui.notifications.error('You do not have permission to link this character.'); return; }
         if (!HarkoniansConnection.isConnected()) { ui.notifications.error('Connect to Harkonians first.'); return; }
-        if (!HarkoniansWorldSecret.isConfigured()) { ui.notifications.error('World secret not configured. GM must configure it first.'); return; }
 
         try {
             await HarkoniansAPI.linkCharacter({
                 foundryWorldId: game.world.id,
-                foundryActorId: actor.id
+                foundryUserId: game.user.id,
+                foundryActorId: actor.id,
+                foundryActorUuid: actor.uuid,
+                characterName: actor.name
             });
             await game.user.setFlag('harkoniansvtt', 'character', {
-                actorId: actor.id, actorUuid: actor.uuid, name: actor.name
-            });
-            await actor.setFlag('harkoniansvtt', 'character', {
                 actorId: actor.id, actorUuid: actor.uuid, name: actor.name
             });
             ui.notifications.info(`${actor.name} linked to Harkonians.`);
@@ -716,7 +566,7 @@ class HarkoniansItemPicker extends HarkoniansApplication {
             })
             .sort((a, b) => a.name.localeCompare(b.name));
 
-        return { items, worldConfigured: HarkoniansWorldSecret.isConfigured() };
+        return { items };
     }
 
     async _addItem(itemId) {
@@ -726,11 +576,6 @@ class HarkoniansItemPicker extends HarkoniansApplication {
     async _addItems(itemIds) {
         if (!HarkoniansConnection.isConnected()) {
             ui.notifications.error('Connect to Harkonians before adding Items.');
-            return;
-        }
-        
-        if (!HarkoniansWorldSecret.isConfigured()) {
-            ui.notifications.error('World secret not configured. GM must configure it first.');
             return;
         }
 
@@ -845,18 +690,6 @@ class HarkoniansWebSocket {
     static heartbeatInterval = 10000; // Send ping every 10 seconds
     static heartbeatTimer = null;
 
-    static getWebSocketUrl() {
-        // For development, use localhost with WebSocket port
-        // For production, use the same domain as API
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Development: WebSocket server runs on port 3001
-            return `ws://localhost:3001?token=`;
-        } else {
-            // Production: use wss with the API domain
-            return `wss://api.harkonians.quest/v1/foundry/ws?token=`;
-        }
-    }
-
     static connect() {
         if (!HarkoniansConnection.isConnected()) {
             console.log('HarkoniansVTT | Not connected to Harkonians, skipping WebSocket');
@@ -872,7 +705,7 @@ class HarkoniansWebSocket {
         }
 
         // Use wss for secure connection
-        const url = `${this.getWebSocketUrl()}${encodeURIComponent(token)}`;
+        const url = `wss://api.harkonians.quest/v1/foundry/ws?token=${encodeURIComponent(token)}`;
 
         this.socket = new WebSocket(url);
 
@@ -915,9 +748,8 @@ class HarkoniansWebSocket {
     static handleMessage(data) {
         switch (data.type) {
             case 'purchase':
-            case 'purchase_complete':
                 // Handle purchase from store
-                HarkoniansPurchaseHandler.handlePurchase(data.purchase || data);
+                HarkoniansPurchaseHandler.handlePurchase(data.purchase);
                 break;
             case 'gold_update':
                 // Handle gold update from store
@@ -1028,18 +860,6 @@ class HarkoniansSettings {
                 restricted: false
             }
         );
-        game.settings.register(
-            this.namespace,
-            'worldSecret',
-            {
-                name: 'Harkonians World Secret',
-                hint: 'The world secret from Harkonians. Required for all API operations.',
-                scope: 'world',
-                config: false,
-                type: String,
-                default: ''
-            }
-        );
     }
 }
 
@@ -1111,8 +931,8 @@ class HarkoniansItemDirectoryIntegration {
         ItemDirectoryClass.prototype._getHeaderControls = function(...args) {
             const controls = originalGetHeaderControls.call(this, ...args);
             
-            // Only add button for GM users who are connected and world secret is configured
-            if (game.user.isGM && HarkoniansConnection.isConnected() && HarkoniansWorldSecret.isConfigured()) {
+            // Only add button for GM users who are connected
+            if (game.user.isGM && HarkoniansConnection.isConnected()) {
                 controls.add({
                     action: 'harkonians-add-item',
                     icon: 'fas fa-store',
@@ -1131,10 +951,8 @@ class HarkoniansItemDirectoryIntegration {
         ItemDirectoryClass.prototype._onClickAction = function(event, target) {
             if (target?.dataset?.action === 'harkonians-add-item') {
                 event.preventDefault();
-                if (game.user.isGM && HarkoniansConnection.isConnected() && HarkoniansWorldSecret.isConfigured()) {
+                if (game.user.isGM && HarkoniansConnection.isConnected()) {
                     new HarkoniansItemPicker().render({ force: true });
-                } else if (!HarkoniansWorldSecret.isConfigured()) {
-                    ui.notifications.warn('World secret not configured. GM must configure it first.');
                 } else {
                     ui.notifications.warn('Only the Game Master can add Items to Harkonians.');
                 }
@@ -1178,9 +996,9 @@ Hooks.once('init', () => {
         });
 
         if (goldChanged) {
-            // Sync gold to Harkonians if actor is linked and world secret is configured
+            // Sync gold to Harkonians if actor is linked
             const harkoniansData = actor.getFlag('harkoniansvtt', 'character');
-            if (harkoniansData?.actorId && HarkoniansWorldSecret.isConfigured()) {
+            if (harkoniansData?.actorId) {
                 await HarkoniansGoldSync.syncActorGold(actor.id);
             }
         }

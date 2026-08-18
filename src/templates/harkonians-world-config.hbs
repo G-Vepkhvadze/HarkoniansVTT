@@ -1,0 +1,48 @@
+<div class="harkoniansvtt-window-content">
+    <section class="harkoniansvtt-section">
+        <h2>World Secret Configuration</h2>
+        <p>
+            The world secret is required for all API communication with Harkonians.
+            The Game Master must obtain this secret from the Harkonians website and enter it here.
+        </p>
+        
+        {{#if hasWorldSecret}}
+            <p class="harkoniansvtt-connection-status connected">
+                <i class="fas fa-check-circle"></i> World secret is configured
+            </p>
+        {{else}}
+            <p class="harkoniansvtt-connection-status disconnected">
+                <i class="fas fa-exclamation-circle"></i> World secret is not configured
+            </p>
+        {{/if}}
+    </section>
+
+    <section class="harkoniansvtt-section">
+        <h2>Configure World Secret</h2>
+        <p>Enter the world secret provided by Harkonians:</p>
+        
+        <div class="harkoniansvtt-form-group">
+            <input 
+                type="text" 
+                name="worldSecret"
+                class="harkoniansvtt-input"
+                placeholder="Enter world secret..."
+                {{#if hasWorldSecret}}value="{{worldSecret}}"{{/if}}
+            />
+        </div>
+        
+        <p class="harkoniansvtt-hint">
+            <strong>Note:</strong> This secret will be verified with Harkonians when you save.
+            Leave empty and save to remove the current secret.
+        </p>
+    </section>
+
+    <footer class="harkoniansvtt-footer">
+        <button type="button" data-action="cancel" class="harkoniansvtt-button">
+            Cancel
+        </button>
+        <button type="button" data-action="save" class="harkoniansvtt-button harkoniansvtt-button-primary">
+            <i class="fas fa-save"></i> Save World Secret
+        </button>
+    </footer>
+</div>
