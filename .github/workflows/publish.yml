@@ -53,8 +53,8 @@ jobs:
           find harkoniansvtt -maxdepth 3 -type f | sort
 
           test -f harkoniansvtt/module.json
-          test -f harkoniansvtt/scripts/module.js
-          test -f harkoniansvtt/style.css
+          test -f harkoniansvtt/scripts/main.js
+          test -f harkoniansvtt/harkonians.css
 
       - name: Create module ZIP
         run: |
