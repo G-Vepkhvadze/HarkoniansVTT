@@ -1,138 +1,34 @@
 {
-  "MYMODULE.dog-browser": "Dog browser",
-  "MYMODULE.dogs": "Dogs",
-  "MYMODULE.fetch-random-dog": "Fetch random dog photo",
-  "MYMODULE.random-dog-alt": "Image of a random dog",
-  
-  "HARKONIANS.configTitle": "Harkonians Store Connector Settings",
-  "HARKONIANS.apiKeyLabel": "API Key",
-  "HARKONIANS.apiKeyPlaceholder": "Enter your Harkonians store API key",
-  "HARKONIANS.apiKeyHint": "Get your API key from the Harkonians store and enter it here to connect.",
-  "HARKONIANS.saveButton": "Save Settings",
-  "HARKONIANS.apiKeySaved": "API key saved successfully!",
-  
-  "HARKONIANS.characterManagerTitle": "Harkonians Character Manager",
-  "HARKONIANS.characterManagerLabel": "Manage Characters",
-  "HARKONIANS.characterManagerHint": "Link, sync, and manage your characters' connections to Harkonians",
-  "HARKONIANS.manageCharacters": "Manage Harkonians Characters",
-  
-  "HARKONIANS.worldPairing": "World Pairing",
-  "HARKONIANS.worldNotPaired": "World is not paired with Harkonians",
-  "HARKONIANS.worldConnected": "World is connected to Harkonians",
-  "HARKONIANS.worldDisconnected": "World is not connected",
-  "HARKONIANS.worldCredentialInvalid": "World credentials are invalid",
-  "HARKONIANS.serverUnavailable": "Harkonians server is unavailable",
-  "HARKONIANS.connectionUnknown": "Connection status unknown",
-  
-  "HARKONIANS.pairingCodeLabel": "Pairing Code",
-  "HARKONIANS.pairingCodePlaceholder": "Enter pairing code from Harkonians.quest",
-  "HARKONIANS.pairingCodeHint": "Generate a pairing code on Harkonians.quest and enter it here to connect this world.",
-  "HARKONIANS.pairingCodeWarning": "Pairing codes expire after 15 minutes and can only be used once.",
-  "HARKONIANS.pairWorld": "Pair World",
-  "HARKONIANS.pairingInProgress": "Pairing in progress...",
-  "HARKONIANS.pairingComplete": "World paired successfully!",
-  "HARKONIANS.pairingError": "Failed to pair world",
-  "HARKONIANS.pairingFailed": "Pairing failed",
-  "HARKONIANS.pairingRequiresGM": "Only the Game Master can pair the world.",
-  
-  "HARKONIANS.pairingCodeRequired": "Please enter a pairing code",
-  
-  "HARKONIANS.confirmUnpair": "Confirm Unpair",
-  "HARKONIANS.confirmUnpairMessage": "Are you sure you want to unpair this world from Harkonians? This will not affect your Harkonians account, but all character connections will be removed.",
-  "HARKONIANS.unpairWorld": "Unpair World",
-  "HARKONIANS.unpairComplete": "World unpaired successfully",
-  "HARKONIANS.unpairFailed": "Failed to unpair world",
-  "HARKONIANS.checkConnection": "Check Connection",
-  "HARKONIANS.checkConnectionFailed": "Failed to check connection status",
-  
-  "HARKONIANS.yourCharacters": "Your Characters",
-  "HARKONIANS.noCharacters": "No characters found",
-  "HARKONIANS.noCharactersHint": "Create a character actor to connect to Harkonians.",
-  "HARKONIANS.worldNotPairedWarning": "This world must be paired with Harkonians before you can connect characters.",
-  
+  "HARKONIANS.configTitle": "HarkoniansVTT Configuration",
+  "HARKONIANS.configLabel": "Configure HarkoniansVTT",
+  "HARKONIANS.configHint": "Configure your Harkonians account and character.",
+  "HARKONIANS.connectHarkonians": "Connect Harkonians",
+  "HARKONIANS.connectHint": "Connect this Foundry user to their Harkonians account.",
   "HARKONIANS.connected": "Connected",
   "HARKONIANS.notConnected": "Not connected",
-  "HARKONIANS.connectionIssue": "Connection issue",
-  
-  "HARKONIANS.linkingStarted": "Starting link for {name}...",
-  "HARKONIANS.linkingError": "Failed to start linking",
-  "HARKONIANS.authorizationInBrowser": "Please complete authorization in your browser.",
-  "HARKONIANS.authorizationTimeout": "Authorization timed out. Please try linking again.",
-  "HARKONIANS.authorizationError": "Authorization failed",
-  
+  "HARKONIANS.testConnection": "Test Connection",
+  "HARKONIANS.disconnect": "Disconnect",
+  "HARKONIANS.characterLinking": "Character Linking",
   "HARKONIANS.linkCharacter": "Link Character",
-  "HARKONIANS.link": "Link",
-  "HARKONIANS.characterLinked": "{name} has been linked to Harkonians!",
-  "HARKONIANS.characterNotLinked": "Character is not linked to Harkonians",
-  
-  "HARKONIANS.openStore": "Open Store",
-  "HARKONIANS.storeOpenError": "Failed to open store",
-  
-  "HARKONIANS.syncCharacter": "Sync Character",
-  "HARKONIANS.syncSuccess": "{name} synced successfully. Balance: {balance} CP",
-  "HARKONIANS.syncFailed": "Sync failed",
-  
-  "HARKONIANS.confirmUnlink": "Confirm Unlink",
-  "HARKONIANS.confirmUnlinkMessage": "Are you sure you want to unlink {name} from Harkonians?",
-  "HARKONIANS.unlinkCharacter": "Unlink Character",
-  "HARKONIANS.unlinkComplete": "Character unlinked successfully",
-  "HARKONIANS.unlinkFailed": "Failed to unlink character",
-  
-  "HARKONIANS.actorNotFound": "Character not found",
-  
-  "HARKONIANS.asCharacter": "as",
-  "HARKONIANS.linkedAt": "Linked on",
-  
-  "HARKONIANS.worldCredentialLabel": "World Credential",
-  "HARKONIANS.worldCredentialHint": "Secret credential for authenticating this world with Harkonians",
-  
-  "HARKONIANS.close": "Close",
-  
-  // Publish to Store strings
-  "HARKONIANS.publishToStore": "Add to Harkonians Store",
-  "HARKONIANS.updateStoreItem": "Update Harkonians Store Item",
-  "HARKONIANS.publishItem": "Publish Item",
-  "HARKONIANS.updateItem": "Update Item",
-  
-  "HARKONIANS.itemInformation": "Item Information",
-  "HARKONIANS.name": "Name",
-  "HARKONIANS.type": "Type",
-  "HARKONIANS.description": "Description",
-  "HARKONIANS.itemDataWillBePreserved": "All Item data (system, effects, activities, etc.) will be preserved.",
-  
-  "HARKONIANS.storeMetadata": "Store Metadata",
-  "HARKONIANS.price": "Price",
-  "HARKONIANS.priceRequired": "Please enter a valid price",
-  "HARKONIANS.priceHint": "The price players will pay for this item in the store",
-  
-  "HARKONIANS.cp": "CP",
-  "HARKONIANS.sp": "SP",
-  "HARKONIANS.ep": "EP",
-  "HARKONIANS.gp": "GP",
-  "HARKONIANS.pp": "PP",
-  
-  "HARKONIANS.stock": "Stock",
-  "HARKONIANS.stockRequired": "Please enter a valid stock quantity or select unlimited",
-  "HARKONIANS.stockHint": "How many of this item are available in the store",
-  "HARKONIANS.unlimited": "Unlimited",
-  
-  "HARKONIANS.storeDescriptionOverride": "Store Description Override",
-  "HARKONIANS.storeDescriptionPlaceholder": "Optional custom description for the store listing...",
-  "HARKONIANS.storeDescriptionHint": "Overrides the Item's description in the store. Leave empty to use the Item's description.",
-  
-  "HARKONIANS.storeImageOverride": "Store Image Override",
-  "HARKONIANS.storeImagePlaceholder": "https://example.com/image.jpg",
-  "HARKONIANS.storeImageHint": "Optional image URL for the store listing. Leave empty to use the Item's image.",
-  
-  "HARKONIANS.publishSuccess": "{name} has been published to Harkonians Store (ID: {storeItemId})",
-  "HARKONIANS.publishFailed": "Failed to publish item to Harkonians Store",
-  "HARKONIANS.publishing": "Publishing to Harkonians Store...",
-  
-  "HARKONIANS.cannotPublish": "You cannot publish items. Only the GM can publish, and the world must be paired with Harkonians.",
-  "HARKONIANS.itemNotFound": "Item not found",
-  
-  "HARKONIANS.cancel": "Cancel",
-  
-  // Currency denominations (already defined above)
-  "HARKONIANS.denominationRequired": "Please select a currency denomination"
+  "HARKONIANS.selectCharacter": "Select a character to link to your Harkonians account",
+  "HARKONIANS.noCharacters": "No characters found. Create a character actor to link to Harkonians.",
+  "HARKONIANS.characterLinked": "linked to Harkonians",
+  "HARKONIANS.manageCharacter": "Manage Character",
+  "HARKONIANS.addItemToHarkonians": "Add Item to Harkonians",
+  "HARKONIANS.searchItems": "Search Items...",
+  "HARKONIANS.alreadyLinked": "Already linked",
+  "HARKONIANS.selectItemFirst": "Select an Item first.",
+  "HARKONIANS.itemNoLongerExists": "The selected Item no longer exists.",
+  "HARKONIANS.characterNotFound": "Character not found.",
+  "HARKONIANS.permissionDenied": "You do not have permission to link this character.",
+  "HARKONIANS.connectFirst": "Connect to Harkonians first.",
+  "HARKONIANS.gmOnly": "Only the Game Master can add Items to Harkonians.",
+  "HARKONIANS.connectionWorking": "Connection to Harkonians is working.",
+  "HARKONIANS.connectionFailed": "Connection to Harkonians failed.",
+  "HARKONIANS.disconnected": "Disconnected from Harkonians.",
+  "HARKONIANS.failedToLink": "Failed to link character.",
+  "HARKONIANS.failedToDisconnect": "Failed to disconnect.",
+  "HARKONIANS.itemAdded": "added to Harkonians.",
+  "HARKONIANS.failedToAddItem": "Failed to add Item to Harkonians.",
+  "HARKONIANS.requiresV13": "HarkoniansVTT requires Foundry VTT V13."
 }

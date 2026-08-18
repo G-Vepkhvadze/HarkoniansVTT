@@ -1,39 +1,61 @@
 import * as fsPromises from "fs/promises";
 import copy from "rollup-plugin-copy";
-import scss from "rollup-plugin-scss";
 import { defineConfig, Plugin } from "vite";
+import { promises as fs } from "fs";
 
 const moduleVersion = process.env.MODULE_VERSION;
 const githubProject = process.env.GH_PROJECT;
 const githubTag = process.env.GH_TAG;
+
+async function copyCSS() {
+    try {
+        await fs.mkdir("dist/styles", { recursive: true });
+        await fs.copyFile("src/styles/harkonians.css", "dist/styles/harkonians.css");
+    } catch (error) {
+        console.error("Error copying CSS:", error);
+    }
+}
+
+async function copyTemplates() {
+    try {
+        await fs.mkdir("dist/templates", { recursive: true });
+        const files = await fs.readdir("src/templates");
+        for (const file of files) {
+            await fs.copyFile(`src/templates/${file}`, `dist/templates/${file}`);
+        }
+    } catch (error) {
+        console.error("Error copying templates:", error);
+    }
+}
 
 export default defineConfig({
   build: {
     sourcemap: true,
     outDir: "dist",
     rollupOptions: {
-      input: "src/ts/module.ts",
+      input: "src/scripts/main.js",
       output: {
-        entryFileNames: "scripts/module.js",
+        entryFileNames: "scripts/main.js",
         format: "es",
       },
     },
   },
   plugins: [
     updateModuleManifestPlugin(),
-    scss({
-      output: "dist/style.css",
-      sourceMap: true,
-      watch: ["src/styles/*.scss"],
-    }),
     copy({
       targets: [
         { src: "src/languages", dest: "dist" },
-        { src: "src/templates", dest: "dist" },
         { src: "src/styles/favicon.ico", dest: "dist" },
       ],
       hook: "writeBundle",
     }),
+    {
+      name: "copy-assets",
+      async closeBundle() {
+        await copyCSS();
+        await copyTemplates();
+      }
+    }
   ],
 });
 

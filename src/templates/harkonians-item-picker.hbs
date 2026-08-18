@@ -1,0 +1,64 @@
+<div class="harkoniansvtt-picker">
+
+    <input
+        type="search"
+        class="harkoniansvtt-search"
+        placeholder="Search Items..."
+        data-harkonians-item-search />
+
+    <div class="harkoniansvtt-item-list">
+
+        {{#each items}}
+
+            <label
+                class="harkoniansvtt-item-entry {{#if alreadyLinked}}harkoniansvtt-item-linked{{/if}}">
+
+                <input
+                    type="radio"
+                    name="harkonians-item"
+                    value="{{id}}"
+                    {{#if alreadyLinked}}disabled{{/if}} />
+
+                <img
+                    src="{{img}}"
+                    alt="{{name}}" />
+
+                <span class="harkoniansvtt-item-name">
+                    {{name}}
+                </span>
+
+                <span class="harkoniansvtt-item-type">
+                    ({{type}})
+                </span>
+
+                {{#if alreadyLinked}}
+                    <span class="harkoniansvtt-item-linked-badge">
+                        Already linked
+                    </span>
+                {{/if}}
+
+            </label>
+
+        {{/each}}
+
+    </div>
+
+    <footer class="harkoniansvtt-picker-footer">
+
+        <button
+            type="button"
+            data-action="cancel"
+            class="harkoniansvtt-button">
+            Cancel
+        </button>
+
+        <button
+            type="button"
+            data-action="add"
+            class="harkoniansvtt-button harkoniansvtt-button-primary">
+            Add Item to Harkonians
+        </button>
+
+    </footer>
+
+</div>

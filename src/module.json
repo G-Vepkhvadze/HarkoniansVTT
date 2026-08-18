@@ -13,17 +13,13 @@
     }
   ],
   "compatibility": {
-    "minimum": "12",
+    "minimum": "13",
     "verified": "13",
-    "maximum": "14"
+    "maximum": "13"
   },
   "packs": [],
   "system": [],
-  "dependencies": [
-    {
-      "name": "lib-df-buttons"
-    }
-  ],
+  "dependencies": [],
   "scripts": [],
   "languages": [
     {
@@ -32,6 +28,6 @@
       "path": "languages/en.json"
     }
   ],
-  "styles": ["style.css"],
-  "esmodules": ["scripts/module.js"]
+  "styles": ["styles/harkonians.css"],
+  "esmodules": ["scripts/main.js"]
 }

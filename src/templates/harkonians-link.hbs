@@ -1,0 +1,55 @@
+<div class="harkoniansvtt-window-content">
+
+    {{#if connected}}
+
+        <section class="harkoniansvtt-section">
+
+            <h2>Harkonians Account</h2>
+
+            <p>
+                Connected
+            </p>
+
+            {{#if account.username}}
+                <p>
+                    {{account.username}}
+                </p>
+            {{/if}}
+
+        </section>
+
+        <section class="harkoniansvtt-section">
+
+            <h2>Character</h2>
+
+            <button
+                type="button"
+                data-action="configure"
+                class="harkoniansvtt-button">
+                Manage Character
+            </button>
+
+        </section>
+
+    {{else}}
+
+        <section class="harkoniansvtt-section">
+
+            <h2>Connect Harkonians</h2>
+
+            <p>
+                Connect this Foundry user to their Harkonians account.
+            </p>
+
+            <button
+                type="button"
+                data-action="connect"
+                class="harkoniansvtt-button">
+                Connect Harkonians
+            </button>
+
+        </section>
+
+    {{/if}}
+
+</div>

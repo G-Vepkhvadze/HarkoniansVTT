@@ -22,9 +22,12 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noImplicitAny": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": false
   },
   "include": [
-    "src"
+    "src/scripts/**/*",
+    "src/templates/**/*"
   ]
 }
