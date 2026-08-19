@@ -396,7 +396,7 @@ class HarkoniansItemSync {
                 console.error('HarkoniansVTT | Failed to send item:', item.name, error);
                 results.push({
                     itemId: item.id,
-                    status: 'error',
+                    status: 'error 213',
                     error: error.message
                 });
             }
