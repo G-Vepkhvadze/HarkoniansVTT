@@ -63,18 +63,12 @@ function updateModuleManifestPlugin(): Plugin {
   return {
     name: "update-module-manifest",
     async writeBundle(): Promise<void> {
-      const packageContents = JSON.parse(
-        await fsPromises.readFile("./package.json", "utf-8")
-      ) as Record<string, unknown>;
-      const version = moduleVersion || (packageContents.version as string);
       const manifestContents: string = await fsPromises.readFile(
         "src/module.json",
         "utf-8"
       );
-      const manifestJson = JSON.parse(manifestContents) as Record<
-        string,
-        unknown
-      >;
+      const manifestJson = JSON.parse(manifestContents) as Record<string, unknown>;
+      const version = moduleVersion || (manifestJson.version as string);
       manifestJson["version"] = version;
       if (githubProject) {
         const baseUrl = `https://github.com/${githubProject}/releases`;
