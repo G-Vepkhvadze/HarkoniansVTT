@@ -31,8 +31,8 @@ jobs:
 
           if [ "$TAG_VERSION" != "$MODULE_VERSION" ]; then
             echo "Version mismatch!"
-            echo "Git tag:       $TAG_VERSION"
-            echo "module.json:   $MODULE_VERSION"
+            echo "Git tag: $TAG_VERSION"
+            echo "module.json: $MODULE_VERSION"
             exit 1
           fi
 
@@ -40,7 +40,7 @@ jobs:
         run: |
           mkdir -p release
 
-          zip -r "release/harkoniansvtt.zip" \
+          zip -r release/harkoniansvtt.zip \
             src \
             styles \
             templates \
@@ -53,29 +53,18 @@ jobs:
 
       - name: Verify release files
         run: |
-          ls -lah release/
+          ls -lah release
 
-      - name: Create or update GitHub Release
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="${GITHUB_REF_NAME}"
 
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists."
-            echo "Uploading updated release assets..."
-
-            gh release upload "$TAG" \
-              "release/harkoniansvtt.zip" \
-              "release/module.json" \
-              --clobber
-          else
-            echo "Creating release $TAG..."
-
-            gh release create "$TAG" \
-              "release/harkoniansvtt.zip" \
-              "release/module.json" \
-              --title "HarkoniansVTT ${VERSION}" \
-              --generate-notes
-          fite-notes
+          gh release create "$TAG" \
+            release/harkoniansvtt.zip \
+            release/module.json \
+            --title "HarkoniansVTT ${VERSION}" \
+            --generate-notes \
+            --verify-tag
