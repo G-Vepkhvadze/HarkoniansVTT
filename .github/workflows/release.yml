@@ -40,9 +40,7 @@ jobs:
         run: |
           mkdir -p release
 
-          VERSION="${{ steps.version.outputs.version }}"
-
-          zip -r "release/harkoniansvtt-${VERSION}.zip" \
+          zip -r "release/harkoniansvtt.zip" \
             src \
             styles \
             templates \
@@ -64,7 +62,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
 
           gh release create "$GITHUB_REF_NAME" \
-            "release/harkoniansvtt-${VERSION}.zip" \
+            "release/harkoniansvtt.zip" \
             "release/module.json" \
             --title "HarkoniansVTT ${VERSION}" \
             --generate-notes
