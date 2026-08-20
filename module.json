@@ -2,11 +2,10 @@
   "id": "harkoniansvtt",
   "title": "HarkoniansVTT",
   "description": "Connects Foundry VTT to Harkonians Dazzling Emporium.",
-  "version": "1.0.0",
+  "version": "3.5.0",
   "compatibility": {
     "minimum": "13",
-    "verified": "13",
-    "maximum": "13"
+    "verified": "13"
   },
   "authors": [
     {
