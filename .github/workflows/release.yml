@@ -40,7 +40,7 @@ jobs:
         run: |
           mkdir -p release
 
-          zip -r "release/harkoniansvtt-${{ steps.version.outputs.version }}.zip" \
+          zip -r "release/harkoniansvtt.zip" \
             src \
             styles \
             templates \
