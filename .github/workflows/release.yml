@@ -54,6 +54,18 @@ jobs:
       - name: Verify release files
         run: |
           ls -lah release
+          
+      - name: Debug GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Current tag: $GITHUB_REF_NAME"
+          echo "Existing release:"
+          gh release view "$GITHUB_REF_NAME" || echo "NO EXISTING RELEASE"
+
+          echo ""
+          echo "Existing releases:"
+          gh release list --limit 20   
 
       - name: Create GitHub Release
         env:
