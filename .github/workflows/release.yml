@@ -67,26 +67,38 @@ jobs:
           echo "Existing releases:"
           gh release list --limit 20   
 
-      - name: Debug release state
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "========================================"
-          echo "TAG: $GITHUB_REF_NAME"
-          echo "========================================"
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${GITHUB_REF_NAME}"
 
-          echo ""
-          echo "Checking release..."
-          gh release view "$GITHUB_REF_NAME" || true
+          echo "Creating release ${TAG}..."
 
-          echo ""
-          echo "Checking tag..."
-          gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}" || true
+          RELEASE_JSON=$(gh api \
+            --method POST \
+            "/repos/${GITHUB_REPOSITORY}/releases" \
+            -f tag_name="$TAG" \
+            -f name="HarkoniansVTT ${VERSION}" \
+            -f body="HarkoniansVTT ${VERSION}" \
+            -F draft=false \
+            -F prerelease=false)
 
-          echo ""
-          echo "Checking releases..."
-          gh release list --limit 20
+          UPLOAD_URL=$(echo "$RELEASE_JSON" | jq -r '.upload_url' | sed 's/{?name,label}//')
 
-          echo ""
-          echo "Repository:"
-          echo "$GITHUB_REPOSITORY"
+          echo "Uploading module.zip..."
+          gh api \
+            --method POST \
+            -H "Content-Type: application/zip" \
+            "${UPLOAD_URL}?name=harkoniansvtt.zip" \
+            --input release/harkoniansvtt.zip
+
+          echo "Uploading module.json..."
+          gh api \
+            --method POST \
+            -H "Content-Type: application/json" \
+            "${UPLOAD_URL}?name=module.json" \
+            --input release/module.json
+
+          echo "Release complete!"
