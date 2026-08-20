@@ -22,7 +22,6 @@ jobs:
         run: |
           VERSION=$(node -p "require('./module.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "HarkoniansVTT version: $VERSION"
 
       - name: Verify tag matches module version
         run: |
@@ -31,8 +30,6 @@ jobs:
 
           if [ "$TAG_VERSION" != "$MODULE_VERSION" ]; then
             echo "Version mismatch!"
-            echo "Git tag: $TAG_VERSION"
-            echo "module.json: $MODULE_VERSION"
             exit 1
           fi
 
@@ -51,54 +48,30 @@ jobs:
         run: |
           cp module.json release/module.json
 
-      - name: Verify release files
-        run: |
-          ls -lah release
-          
-      - name: Debug GitHub release
+      - name: Delete previous stable release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Current tag: $GITHUB_REF_NAME"
-          echo "Existing release:"
-          gh release view "$GITHUB_REF_NAME" || echo "NO EXISTING RELEASE"
+          gh release delete stable --yes || true
 
-          echo ""
-          echo "Existing releases:"
-          gh release list --limit 20   
+      - name: Delete previous stable tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method DELETE \
+            "/repos/${GITHUB_REPOSITORY}/git/refs/tags/stable" \
+            || true
 
-      - name: Create GitHub Release
+      - name: Create stable release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          TAG="${GITHUB_REF_NAME}"
 
-          echo "Creating release ${TAG}..."
-
-          RELEASE_JSON=$(gh api \
-            --method POST \
-            "/repos/${GITHUB_REPOSITORY}/releases" \
-            -f tag_name="$TAG" \
-            -f name="HarkoniansVTT ${VERSION}" \
-            -f body="HarkoniansVTT ${VERSION}" \
-            -F draft=false \
-            -F prerelease=false)
-
-          UPLOAD_URL=$(echo "$RELEASE_JSON" | jq -r '.upload_url' | sed 's/{?name,label}//')
-
-          echo "Uploading module.zip..."
-          gh api \
-            --method POST \
-            -H "Content-Type: application/zip" \
-            "${UPLOAD_URL}?name=harkoniansvtt.zip" \
-            --input release/harkoniansvtt.zip
-
-          echo "Uploading module.json..."
-          gh api \
-            --method POST \
-            -H "Content-Type: application/json" \
-            "${UPLOAD_URL}?name=module.json" \
-            --input release/module.json
-
-          echo "Release complete!"
+          gh release create stable \
+            release/harkoniansvtt.zip \
+            release/module.json \
+            --title "HarkoniansVTT ${VERSION}" \
+            --notes "HarkoniansVTT ${VERSION}" \
+            --target "${GITHUB_SHA}"
