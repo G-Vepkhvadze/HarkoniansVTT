@@ -3,53 +3,60 @@ name: Release HarkoniansVTT
 on:
   push:
     tags:
-      - "*"
+      - "v*"
 
 permissions:
   contents: write
 
 jobs:
   release:
+    name: Build and Release
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare release manifest
-        shell: bash
+      - name: Read module version
+        id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION=$(node -p "require('./module.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "HarkoniansVTT version: $VERSION"
 
-          mkdir -p dist
-
-          jq \
-            --arg version "$VERSION" \
-            --arg manifest "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/download/${GITHUB_REF_NAME}/module.json" \
-            --arg download "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/download/${GITHUB_REF_NAME}/module.zip" \
-            '.version = $version | .manifest = $manifest | .download = $download' \
-            module.json > dist/module.json
-
-      - name: Build module archive
-        shell: bash
+      - name: Verify tag matches module version
         run: |
-          mkdir -p dist/package
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          MODULE_VERSION="${{ steps.version.outputs.version }}"
 
-          cp -r src dist/package/
-          cp -r templates dist/package/
-          cp -r styles dist/package/
+          if [ "$TAG_VERSION" != "$MODULE_VERSION" ]; then
+            echo "Version mismatch!"
+            echo "Git tag:       $TAG_VERSION"
+            echo "module.json:   $MODULE_VERSION"
+            exit 1
+          fi
 
-          cp dist/module.json dist/package/module.json
+      - name: Create module archive
+        run: |
+          mkdir -p release
 
-          cd dist/package
-          zip -r ../module.zip .
+          zip -r "release/harkoniansvtt-${{ steps.version.outputs.version }}.zip" \
+            src \
+            styles \
+            templates \
+            module.json \
+            README.md
 
-      - name: Create GitHub release
+      - name: Copy module manifest
+        run: |
+          cp module.json "release/module.json"
+
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create \
-            "$GITHUB_REF_NAME" \
-            dist/module.json \
-            dist/module.zip \
+          gh release create "$GITHUB_REF_NAME" \
+            "release/harkoniansvtt-${{ steps.version.outputs.version }}.zip" \
+            "release/module.json" \
+            --title "HarkoniansVTT ${{ steps.version.outputs.version }}" \
             --generate-notes
