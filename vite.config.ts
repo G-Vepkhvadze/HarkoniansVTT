@@ -1,88 +1,153 @@
-import * as fsPromises from "fs/promises";
-import copy from "rollup-plugin-copy";
-import { defineConfig, Plugin } from "vite";
-import { promises as fs } from "fs";
+import { defineConfig } from "vite";
+import fs from "node:fs/promises";
+import path from "node:path";
 
-const moduleVersion = process.env.MODULE_VERSION;
-const githubProject = process.env.GH_PROJECT;
-const githubTag = process.env.GH_TAG;
+const rootDir = process.cwd();
+const distDir = path.resolve(rootDir, "dist");
 
-async function copyCSS() {
-    try {
-        await fs.mkdir("dist/styles", { recursive: true });
-        await fs.copyFile("src/styles/harkonians.css", "dist/styles/harkonians.css");
-    } catch (error) {
-        console.error("Error copying CSS:", error);
+async function copyFile(
+    source: string,
+    destination: string
+) {
+    await fs.mkdir(
+        path.dirname(destination),
+        { recursive: true }
+    );
+
+    await fs.copyFile(
+        source,
+        destination
+    );
+}
+
+async function copyDirectory(
+    source: string,
+    destination: string
+) {
+    await fs.mkdir(
+        destination,
+        { recursive: true }
+    );
+
+    const entries =
+        await fs.readdir(
+            source,
+            { withFileTypes: true }
+        );
+
+    for (const entry of entries) {
+        const sourcePath =
+            path.join(
+                source,
+                entry.name
+            );
+
+        const destinationPath =
+            path.join(
+                destination,
+                entry.name
+            );
+
+        if (entry.isDirectory()) {
+            await copyDirectory(
+                sourcePath,
+                destinationPath
+            );
+        } else {
+            await copyFile(
+                sourcePath,
+                destinationPath
+            );
+        }
     }
 }
 
-async function copyTemplates() {
-    try {
-        await fs.mkdir("dist/templates", { recursive: true });
-        const files = await fs.readdir("src/templates");
-        for (const file of files) {
-            await fs.copyFile(`src/templates/${file}`, `dist/templates/${file}`);
+function copyFoundryFiles() {
+    return {
+        name: "copy-foundry-files",
+
+        async closeBundle() {
+
+            await copyFile(
+                path.resolve(
+                    rootDir,
+                    "styles",
+                    "harkonians.css"
+                ),
+                path.resolve(
+                    distDir,
+                    "styles",
+                    "harkonians.css"
+                )
+            );
+
+            await copyDirectory(
+                path.resolve(
+                    rootDir,
+                    "templates"
+                ),
+                path.resolve(
+                    distDir,
+                    "templates"
+                )
+            );
+
+            await copyFile(
+                path.resolve(
+                    rootDir,
+                    "module.json"
+                ),
+                path.resolve(
+                    distDir,
+                    "module.json"
+                )
+            );
+
+            console.log(
+                "HarkoniansVTT | Foundry files copied."
+            );
         }
-    } catch (error) {
-        console.error("Error copying templates:", error);
-    }
+    };
 }
 
 export default defineConfig({
-  build: {
-    sourcemap: true,
-    outDir: "dist",
-    rollupOptions: {
-      input: "src/scripts/main.js",
-      output: {
-        entryFileNames: "scripts/main.js",
-        format: "es",
-      },
-    },
-  },
-  plugins: [
-    updateModuleManifestPlugin(),
-    copy({
-      targets: [
-        { src: "src/languages", dest: "dist" },
-        { src: "src/styles/favicon.ico", dest: "dist" },
-      ],
-      hook: "writeBundle",
-    }),
-    {
-      name: "copy-assets",
-      async closeBundle() {
-        await copyCSS();
-        await copyTemplates();
-      }
-    }
-  ],
-});
+    build: {
 
-function updateModuleManifestPlugin(): Plugin {
-  return {
-    name: "update-module-manifest",
-    async writeBundle(): Promise<void> {
-      const manifestContents: string = await fsPromises.readFile(
-        "src/module.json",
-        "utf-8"
-      );
-      const manifestJson = JSON.parse(manifestContents) as Record<string, unknown>;
-      const version = moduleVersion || (manifestJson.version as string);
-      manifestJson["version"] = version;
-      if (githubProject) {
-        const baseUrl = `https://github.com/${githubProject}/releases`;
-        manifestJson["manifest"] = `${baseUrl}/latest/download/module.json`;
-        if (githubTag) {
-          manifestJson[
-            "download"
-          ] = `${baseUrl}/download/${githubTag}/harkoniansvtt.zip`;
-        }
-      }
-      await fsPromises.writeFile(
-        "dist/module.json",
-        JSON.stringify(manifestJson, null, 4)
-      );
+        lib: {
+            entry: path.resolve(
+                rootDir,
+                "src",
+                "main.js"
+            ),
+
+            formats: ["es"],
+
+            fileName: () => "src/main.js"
+        },
+
+        rollupOptions: {
+            output: {
+                format: "es",
+
+                entryFileNames:
+                    "src/main.js",
+
+                chunkFileNames:
+                    "src/[name].js",
+
+                assetFileNames:
+                    "src/assets/[name][extname]"
+            }
+        },
+
+        emptyOutDir: true,
+
+        sourcemap: false,
+
+        minify: false
     },
-  };
-}
+
+    plugins: [
+        copyFoundryFiles()
+    ]
+});

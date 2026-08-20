@@ -1,0 +1,24 @@
+{
+  "id": "harkoniansvtt",
+  "title": "HarkoniansVTT",
+  "description": "Connects Foundry VTT to Harkonians Dazzling Emporium.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13",
+    "maximum": "13"
+  },
+  "authors": [
+    {
+      "name": "Giorgi Vepkhvadze"
+    }
+  ],
+  "url": "https://github.com/G-Vepkhvadze/HarkoniansVTT",
+  "license": "MIT",
+  "esmodules": [
+    "src/main.js"
+  ],
+  "styles": [
+    "styles/harkonians.css"
+  ]
+}

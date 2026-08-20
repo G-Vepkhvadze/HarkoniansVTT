@@ -1,0 +1,95 @@
+<div class="harkonians-item-publisher-dialog">
+    <section class="harkonians-item-summary">
+        <img
+                src="{{item.img}}"
+                alt="{{item.name}}"
+                class="harkonians-item-image"
+        />
+
+        <div>
+            <h2>{{item.name}}</h2>
+            <p>{{item.type}}</p>
+        </div>
+    </section>
+
+    {{#if alreadyPublished}}
+        <div class="harkonians-status harkonians-status-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>
+        This Item is already linked to a Harkonians Store Item.
+      </span>
+        </div>
+    {{else}}
+        <form class="harkonians-publish-form">
+            <div class="harkonians-form-row">
+                <label for="harkonians-price-amount">
+                    Price
+                </label>
+
+                <div class="harkonians-price-row">
+                    <input
+                            id="harkonians-price-amount"
+                            name="priceAmount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value="1"
+                            required
+                    />
+
+                    <select
+                            name="priceDenomination"
+                            aria-label="Price denomination"
+                    >
+                        <option value="pp">Platinum</option>
+                        <option value="gp" selected>Gold</option>
+                        <option value="ep">Electrum</option>
+                        <option value="sp">Silver</option>
+                        <option value="cp">Copper</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="harkonians-form-row">
+                <label for="harkonians-stock">
+                    Stock
+                </label>
+
+                <select
+                        id="harkonians-stock"
+                        name="stock"
+                >
+                    <option value="unlimited" selected>
+                        Unlimited
+                    </option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+
+            <div class="harkonians-actions">
+                <button
+                        type="button"
+                        class="harkonians-button"
+                        data-action="cancel"
+                >
+                    Cancel
+                </button>
+
+                <button
+                        type="button"
+                        class="harkonians-button harkonians-button-primary"
+                        data-action="publishItem"
+                >
+                    <i class="fa-solid fa-store"></i>
+                    Add to Harkonians
+                </button>
+            </div>
+        </form>
+    {{/if}}
+</div>

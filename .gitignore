@@ -17,8 +17,14 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+node_modules/
+dist/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+

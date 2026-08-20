@@ -1,0 +1,154 @@
+.harkoniansvtt {
+    box-sizing: border-box;
+}
+
+.harkoniansvtt *,
+.harkoniansvtt *::before,
+.harkoniansvtt *::after {
+    box-sizing: border-box;
+}
+
+.harkonians-link-dialog,
+.harkonians-item-publisher-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+}
+
+.harkonians-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid currentColor;
+    opacity: 0.95;
+}
+
+.harkonians-section:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.harkonians-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.harkonians-section-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.harkonians-section-header i {
+    width: 18px;
+    text-align: center;
+}
+
+.harkonians-help {
+    margin: 0;
+    opacity: 0.75;
+    line-height: 1.45;
+}
+
+.harkonians-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+.harkonians-status-success {
+    color: inherit;
+}
+
+.harkonians-status-warning {
+    color: inherit;
+}
+
+.harkonians-status-disabled {
+    opacity: 0.6;
+}
+
+.harkonians-form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.harkonians-form-row label {
+    font-weight: 600;
+}
+
+.harkonians-form-row input,
+.harkonians-form-row select {
+    width: 100%;
+    min-height: 32px;
+}
+
+.harkonians-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.harkonians-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.harkonians-button-primary {
+    font-weight: 600;
+}
+
+.harkonians-item-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid currentColor;
+}
+
+.harkonians-item-image {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.harkonians-item-summary h2 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.harkonians-item-summary p {
+    margin: 2px 0 0;
+    opacity: 0.7;
+}
+
+.harkonians-publish-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.harkonians-price-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.harkonians-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+}
