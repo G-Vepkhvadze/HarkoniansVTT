@@ -40,7 +40,9 @@ jobs:
         run: |
           mkdir -p release
 
-          zip -r "release/harkoniansvtt.zip" \
+          VERSION="${{ steps.version.outputs.version }}"
+
+          zip -r "release/harkoniansvtt-${VERSION}.zip" \
             src \
             styles \
             templates \
@@ -49,14 +51,20 @@ jobs:
 
       - name: Copy module manifest
         run: |
-          cp module.json "release/module.json"
+          cp module.json release/module.json
+
+      - name: Verify release files
+        run: |
+          ls -lah release/
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
           gh release create "$GITHUB_REF_NAME" \
-            "release/harkoniansvtt-${{ steps.version.outputs.version }}.zip" \
+            "release/harkoniansvtt-${VERSION}.zip" \
             "release/module.json" \
-            --title "HarkoniansVTT ${{ steps.version.outputs.version }}" \
+            --title "HarkoniansVTT ${VERSION}" \
             --generate-notes
