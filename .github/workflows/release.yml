@@ -67,16 +67,26 @@ jobs:
           echo "Existing releases:"
           gh release list --limit 20   
 
-      - name: Create GitHub Release
+      - name: Debug release state
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          TAG="${GITHUB_REF_NAME}"
+          echo "========================================"
+          echo "TAG: $GITHUB_REF_NAME"
+          echo "========================================"
 
-          gh release create "$TAG" \
-            release/harkoniansvtt.zip \
-            release/module.json \
-            --title "HarkoniansVTT ${VERSION}" \
-            --generate-notes \
-            --verify-tag
+          echo ""
+          echo "Checking release..."
+          gh release view "$GITHUB_REF_NAME" || true
+
+          echo ""
+          echo "Checking tag..."
+          gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}" || true
+
+          echo ""
+          echo "Checking releases..."
+          gh release list --limit 20
+
+          echo ""
+          echo "Repository:"
+          echo "$GITHUB_REPOSITORY"
