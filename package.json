@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --format=esm --outfile=dist/main.js",
+    "watch": "esbuild src/main.js --bundle --format=esm --outfile=dist/main.js --watch"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

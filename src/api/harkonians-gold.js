@@ -1,11 +1,10 @@
 import {
     getGold,
     syncGold
-} from "./harkonians-api.js";
+} from "./client.js";
 
 import {
     getActorCredentials,
-    getWorldSecret,
     isWorldLinked
 } from "../state.js";
 
@@ -29,10 +28,7 @@ export async function fetchLinkedActorGold() {
         );
     }
 
-    return getGold(
-        getWorldSecret(),
-        credentials.foundryActorId
-    );
+    return getGold();
 }
 
 export async function synchronizeActorGold(
@@ -56,9 +52,5 @@ export async function synchronizeActorGold(
         );
     }
 
-    return syncGold(
-        getWorldSecret(),
-        credentials.foundryActorId,
-        gold
-    );
+    return syncGold(gold);
 }

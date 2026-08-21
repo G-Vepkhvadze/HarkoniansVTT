@@ -14,11 +14,11 @@ import {
 
 import {
     confirmWorldPairing,
-    linkActor
-} from "../api/harkonians-api.js";
+    createActorLinkRequest,
+    exchangeActorLink
+} from "../api/client.js";
 
 import {
-    extractActorCredentials,
     getApplicationFromAction,
     extractWorldSecret
 } from "../utils.js";
@@ -201,26 +201,38 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
         }
 
         try {
-            const response = await linkActor(
+            // Create link request
+            const linkResponse = await createActorLinkRequest(
                 getWorldSecret(),
                 actor
             );
 
-            const credentials =
-                extractActorCredentials(
-                    response,
-                    actor
+            const requestId = linkResponse?.requestId;
+            const linkUrl = linkResponse?.linkUrl;
+
+            if (!requestId || !linkUrl) {
+                throw new Error(
+                    "Harkonians did not return a valid link request."
                 );
+            }
 
-            await saveActorCredentials(credentials);
-
-            ui.notifications.info(
-                `${actor.name} was linked to Harkonians.`
+            // Open browser for authorization
+            window.open(
+                linkUrl,
+                "_blank",
+                "noopener,noreferrer"
             );
 
-            await application.render({
-                force: true
-            });
+            ui.notifications.info(
+                "Complete the Harkonians character authorization in your browser. Foundry will wait for the approval."
+            );
+
+            // Poll for approval and exchange
+            await waitForActorAuthorization(
+                requestId,
+                actor,
+                application
+            );
         } catch (error) {
             console.error(
                 "HarkoniansVTT | Actor linking failed",
@@ -232,5 +244,90 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
                 "Failed to link the Actor."
             );
         }
+    }
+
+    /**
+     * Wait for the browser to authorize the actor link and exchange for credentials.
+     * 
+     * @param {string} requestId - The link request ID
+     * @param {Actor} actor - The Foundry Actor
+     * @param {Object} application - The application instance
+     */
+    static async waitForActorAuthorization(
+        requestId,
+        actor,
+        application
+    ) {
+        const timeout =
+            Date.now() +
+            10 * 60 * 1000; // 10 minutes
+
+        while (
+            Date.now() <
+            timeout
+        ) {
+            try {
+                const response =
+                    await exchangeActorLink(
+                        getWorldSecret(),
+                        requestId
+                    );
+
+                const characterToken =
+                    response?.characterToken;
+
+                const characterId =
+                    response?.characterId;
+
+                if (
+                    characterToken &&
+                    characterId
+                ) {
+                    await saveActorCredentials({
+                        foundryActorId: actor.id,
+                        foundryActorUuid: actor.uuid,
+                        characterId,
+                        characterToken
+                    });
+
+                    ui.notifications.info(
+                        `${actor.name} was linked to Harkonians.`
+                    );
+
+                    await application.render({
+                        force: true
+                    });
+
+                    return;
+                }
+
+            } catch (error) {
+                /*
+                 * 409 here means the browser hasn't
+                 * approved the link yet.
+                 *
+                 * Don't spam the user with errors.
+                 */
+                if (
+                    !error.message?.includes(
+                        "has not approved"
+                    )
+                ) {
+                    throw error;
+                }
+            }
+
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        2000
+                    )
+            );
+        }
+
+        throw new Error(
+            "Character linking timed out."
+        );
     }
 }

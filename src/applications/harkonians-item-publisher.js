@@ -1,5 +1,5 @@
 
-import { api } from "../api/harkonians-api.js";
+import { publishItem } from "../api/client.js";
 
 import {
     getWorldSecret,
@@ -294,7 +294,7 @@ export class HarkoniansItemPublisher
 
         try {
             const response =
-                await api.publishItem(
+                await publishItem(
                     getWorldSecret(),
                     payload
                 );
