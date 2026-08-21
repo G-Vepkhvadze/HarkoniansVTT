@@ -9,7 +9,7 @@
   },
 
   "esmodules": [
-    "dist/main.js"
+    "scripts/main.js"
   ],
 
   "styles": [

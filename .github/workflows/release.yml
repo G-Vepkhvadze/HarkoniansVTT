@@ -17,10 +17,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: yarn
+
       - name: Read module version
         id: version
         run: |
-          VERSION=$(node -p "require('./module.json').version")
+          VERSION=$(node -p "require('./src/module.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Verify tag matches module version
@@ -33,20 +41,17 @@ jobs:
             exit 1
           fi
 
+      - name: Build module with Vite
+        run: yarn build
+
       - name: Create module archive
         run: |
           mkdir -p release
-
-          zip -r release/harkoniansvtt.zip \
-            src \
-            styles \
-            templates \
-            module.json \
-            README.md
+          cd dist && zip -r ../release/harkoniansvtt.zip *
 
       - name: Copy module manifest
         run: |
-          cp module.json release/module.json
+          cp dist/module.json release/module.json
 
       - name: Delete previous stable release
         env:
