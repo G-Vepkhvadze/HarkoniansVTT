@@ -10,7 +10,7 @@ import { getWorldSecret, getActorCredentials } from "../state.js";
  * Base URL for Harkonians API.
  * Can be configured via module settings or environment.
  */
-const API_BASE = "https://harkonians.quest";
+const API_BASE = "https://api.harkonians.quest/v1";
 
 /**
  * Make an authenticated request to Harkonians API.
@@ -80,7 +80,7 @@ async function harkoniansFetch(endpoint, options = {}) {
  * @returns {Promise<Object>}
  */
 export async function confirmWorldPairing(pairingCode) {
-  return harkoniansFetch("/api/foundry/pair/confirm", {
+  return harkoniansFetch("/foundry/pair/confirm", {
     method: "POST",
     body: JSON.stringify({
       pairingCode,
@@ -97,7 +97,7 @@ export async function confirmWorldPairing(pairingCode) {
  * @returns {Promise<Object>}
  */
 export async function createActorLinkRequest(worldSecret, actor) {
-  return harkoniansFetch("/api/foundry/link", {
+  return harkoniansFetch("/foundry/link", {
     method: "POST",
     headers: {
       "x-foundry-world-secret": worldSecret
@@ -117,7 +117,7 @@ export async function createActorLinkRequest(worldSecret, actor) {
  * @returns {Promise<Object>}
  */
 export async function exchangeActorLink(worldSecret, requestId) {
-  return harkoniansFetch("/api/foundry/link/exchange", {
+  return harkoniansFetch("/foundry/link/exchange", {
     method: "POST",
     headers: {
       "x-foundry-world-secret": worldSecret
@@ -137,7 +137,7 @@ export async function exchangeActorLink(worldSecret, requestId) {
  * @returns {Promise<Object>}
  */
 export async function publishItem(worldSecret, itemData) {
-  return harkoniansFetch("/api/foundry/items/publish", {
+  return harkoniansFetch("/foundry/items/publish", {
     method: "POST",
     headers: {
       "x-foundry-world-secret": worldSecret
@@ -155,7 +155,7 @@ export async function publishItem(worldSecret, itemData) {
  * @returns {Promise<Object>}
  */
 export async function acknowledgePurchase(purchaseId, foundryActorId, foundryItemId) {
-  return harkoniansFetch("/api/foundry/purchase", {
+  return harkoniansFetch("/foundry/purchase", {
     method: "POST",
     body: JSON.stringify({
       purchaseId,
@@ -174,7 +174,7 @@ export async function acknowledgePurchase(purchaseId, foundryActorId, foundryIte
  * @returns {Promise<Object>}
  */
 export async function reportPurchaseFailure(purchaseId, error) {
-  return harkoniansFetch("/api/foundry/purchase", {
+  return harkoniansFetch("/foundry/purchase", {
     method: "POST",
     body: JSON.stringify({
       purchaseId,
@@ -190,7 +190,7 @@ export async function reportPurchaseFailure(purchaseId, error) {
  * @returns {Promise<Object>}
  */
 export async function getRealtimeToken() {
-  return harkoniansFetch("/api/foundry/realtime-token");
+  return harkoniansFetch("/foundry/realtime-token");
 }
 
 /**
@@ -199,7 +199,7 @@ export async function getRealtimeToken() {
  * @returns {Promise<Object>}
  */
 export async function getGold() {
-  return harkoniansFetch("/api/foundry/gold");
+  return harkoniansFetch("/foundry/gold");
 }
 
 /**
@@ -209,7 +209,7 @@ export async function getGold() {
  * @returns {Promise<Object>}
  */
 export async function syncGold(gold) {
-  return harkoniansFetch("/api/foundry/gold/sync", {
+  return harkoniansFetch("/foundry/gold/sync", {
     method: "POST",
     body: JSON.stringify({ gold })
   });

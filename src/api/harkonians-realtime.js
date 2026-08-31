@@ -6,16 +6,15 @@
 
 import { 
     getActorCredentials, 
-    getWorldSecret, 
-    clearActorCredentials 
+    getWorldSecret,
 } from "../state.js";
 import { getRealtimeToken } from "./client.js";
 
 // Supabase configuration
 // These are public-safe credentials that can be bundled with the module
 // The service role key (SUPABASE_SECRET_KEY) is only used server-side
-const SUPABASE_URL = "https://your-project-ref.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "your-publishable-key";
+const SUPABASE_URL = "https://wxzegqiegblccpyrbndi.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_-0ptQvh-Hp6-S1LPGGuQLA_iXPhufJY";
 
 /**
  * @type {import('@supabase/supabase-js').SupabaseClient|null}
