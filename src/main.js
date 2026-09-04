@@ -79,7 +79,8 @@ function registerItemSheetControl() {
     Hooks.on(
         "getHeaderControlsApplicationV2",
         (application, controls) => {
-            const item = application?.document;
+            const item =
+                application?.document;
 
             if (
                 !item ||
@@ -91,7 +92,8 @@ function registerItemSheetControl() {
             if (
                 controls.some(
                     control =>
-                        control.action === ITEM_ACTION
+                        control.action ===
+                        ITEM_ACTION
                 )
             ) {
                 return;
@@ -108,8 +110,9 @@ function registerItemSheetControl() {
 
     Hooks.on(
         "renderApplicationV2",
-        (application, element) => {
-            const item = application?.document;
+        (application) => {
+            const item =
+                application?.document;
 
             if (
                 !item ||
@@ -118,69 +121,88 @@ function registerItemSheetControl() {
                 return;
             }
 
-            const button = element?.querySelector(
-                `[data-action="${ITEM_ACTION}"]`
-            );
+            const element =
+                application.element;
 
-            if (!button) {
+            if (!element) {
                 return;
             }
 
-            if (button.dataset.harkoniansBound === "true") {
-                return;
-            }
-
-            button.dataset.harkoniansBound = "true";
-
-            button.addEventListener("click", async event => {
-                event.preventDefault();
-                event.stopPropagation();
-
-                console.log(
-                    "HarkoniansVTT | Add to Harkonians clicked",
-                    item
+            const control =
+                element.querySelector(
+                    `[data-action="${ITEM_ACTION}"]`
                 );
 
-                if (!isWorldLinked()) {
-                    ui.notifications.error(
-                        "Harkonians | This world is not linked."
-                    );
-                    return;
+            if (!control) {
+                return;
+            }
+
+            if (
+                control.dataset.harkoniansBound ===
+                "true"
+            ) {
+                return;
+            }
+
+            control.dataset.harkoniansBound =
+                "true";
+
+            control.addEventListener(
+                "click",
+                async event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (!isWorldLinked()) {
+                        ui.notifications.error(
+                            "Harkonians | This world is not linked."
+                        );
+                        return;
+                    }
+
+                    if (!item) {
+                        ui.notifications.error(
+                            "Harkonians | Could not determine the Item."
+                        );
+                        return;
+                    }
+
+                    try {
+                        const existing =
+                            foundry
+                                .applications
+                                .instances
+                                .get(
+                                    "harkonians-item-publisher"
+                                );
+
+                        if (existing) {
+                            await existing.close();
+                        }
+
+                        const publisher =
+                            new HarkoniansItemPublisher(
+                                item
+                            );
+
+                        await publisher.render({
+                            force: true
+                        });
+                    } catch (error) {
+                        console.error(
+                            "HarkoniansVTT | Failed to open item publisher:",
+                            error
+                        );
+
+                        ui.notifications.error(
+                            `Harkonians | Failed to open item publisher: ${
+                                error?.message ??
+                                "Unknown error"
+                            }`
+                        );
+                    }
                 }
-
-                const existing =
-                    foundry.applications.instances.get(
-                        "harkonians-item-publisher"
-                    );
-
-                if (existing) {
-                    await existing.close();
-                }
-
-                try {
-                    const publisher =
-                        new HarkoniansItemPublisher(item);
-
-                    console.log(
-                        "HarkoniansVTT | Opening item publisher"
-                    );
-
-                    await publisher.render({
-                        force: true
-                    });
-                } catch (error) {
-                    console.error(
-                        "HarkoniansVTT | Failed to open item publisher",
-                        error
-                    );
-
-                    ui.notifications.error(
-                        `Harkonians | Failed to open item publisher: ${
-                            error?.message ?? error
-                        }`
-                    );
-                }
-            });
+            );
         }
     );
 }
@@ -332,6 +354,22 @@ Hooks.once("ready", async () => {
             systemVersion: game.system.version
         }
     );
+
+    await syncLinkedActorGold();
+
+    goldSyncInterval =
+        window.setInterval(
+            () => {
+                syncLinkedActorGold()
+                    .catch(error => {
+                        console.error(
+                            "HarkoniansVTT | Scheduled gold sync failed:",
+                            error
+                        );
+                    });
+            },
+            5 * 60 * 1000
+        );
     
     // Connect to realtime if world and character are linked
     if (isWorldLinked()) {
@@ -346,10 +384,87 @@ Hooks.once("ready", async () => {
     }
 });
 
+let goldSyncInterval = null;
+let lastSyncedGold = null;
+
+async function syncLinkedActorGold() {
+    if (!isWorldLinked()) {
+        return;
+    }
+
+    const credentials =
+        getActorCredentials();
+
+    if (!credentials?.foundryActorId) {
+        return;
+    }
+
+    const actor =
+        game.actors.get(
+            credentials.foundryActorId
+        );
+
+    if (!actor) {
+        console.warn(
+            "HarkoniansVTT | Linked Actor not found."
+        );
+        return;
+    }
+
+    const gold = Number(
+        foundry.utils.getProperty(
+            actor,
+            "system.currency.gp"
+        ) ?? 0
+    );
+
+    if (gold === lastSyncedGold) {
+        return;
+    }
+
+    await synchronizeActorGold(actor);
+
+    lastSyncedGold = gold;
+
+    console.log(
+        `HarkoniansVTT | Synchronized ${gold} GP`
+    );
+}
+
+let goldSyncDirty = false;
+
+Hooks.on(
+    "updateActor",
+    (actor, changes) => {
+        const credentials =
+            getActorCredentials();
+
+        if (
+            credentials?.foundryActorId !== actor.id
+        ) {
+            return;
+        }
+
+        if (
+            changes?.system?.currency?.gp === undefined
+        ) {
+            return;
+        }
+
+        goldSyncDirty = true;
+    }
+);
+
+
 // Handle module shutdown
 Hooks.on("shutdown", () => {
     console.log("HarkoniansVTT | Shutting down, disconnecting realtime...");
     disconnectRealtime();
+
+    if (goldSyncInterval) {
+        clearInterval(goldSyncInterval);
+        goldSyncInterval = null;
+    }
 });
 
 // Optional: Handle world close

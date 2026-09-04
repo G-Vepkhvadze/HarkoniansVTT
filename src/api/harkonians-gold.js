@@ -8,49 +8,33 @@ import {
     isWorldLinked
 } from "../state.js";
 
-export async function fetchLinkedActorGold() {
-    if (!isWorldLinked()) {
-        throw new Error(
-            "Harkonians world is not linked."
-        );
-    }
-
-    const credentials =
-        getActorCredentials();
-
-    if (
-        !credentials.characterToken ||
-        !credentials.characterId ||
-        !credentials.foundryActorId
-    ) {
-        throw new Error(
-            "No Harkonians character is linked to this Foundry client."
-        );
-    }
-
-    return getGold();
+export function getActorGold(actor) {
+    return Number(
+        foundry.utils.getProperty(
+            actor,
+            "system.currency.gp"
+        ) ?? 0
+    );
 }
 
 export async function synchronizeActorGold(
-    gold
+    actor
 ) {
-    if (!isWorldLinked()) {
-        throw new Error(
-            "Harkonians world is not linked."
-        );
-    }
-
     const credentials =
         getActorCredentials();
 
     if (
-        !credentials.foundryActorId ||
-        !credentials.characterToken
+        !isWorldLinked() ||
+        !credentials?.characterId ||
+        !credentials?.characterToken ||
+        !credentials?.foundryActorId
     ) {
         throw new Error(
             "No Harkonians character is linked."
         );
     }
+
+    const gold = getActorGold(actor);
 
     return syncGold(gold);
 }

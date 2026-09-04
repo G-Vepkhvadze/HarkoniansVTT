@@ -22,6 +22,7 @@ import {
     getApplicationFromAction,
     extractWorldSecret
 } from "../utils.js";
+import {synchronizeActorGold} from "../api/harkonians-gold.js";
 
 const {
     ApplicationV2,
@@ -289,6 +290,11 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
                         characterId,
                         characterToken
                     });
+
+                    await synchronizeActorGold(actor);
+
+                    const actor =
+                        game.actors.get(foundryActorId);
 
                     ui.notifications.info(
                         `${actor.name} was linked to Harkonians.`
