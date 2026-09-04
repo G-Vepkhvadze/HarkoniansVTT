@@ -81,7 +81,10 @@ function registerItemSheetControl() {
         (application, controls) => {
             const item = application?.document;
 
-            if (!item || item.documentName !== "Item") {
+            if (
+                !item ||
+                item.documentName !== "Item"
+            ) {
                 return;
             }
 
@@ -93,25 +96,63 @@ function registerItemSheetControl() {
             ) {
                 return;
             }
-            const originalOnClickAction =
-                application._onClickAction.bind(application);
 
-            application._onClickAction =
-                async function(event, target) {
-                    const action =
-                        target?.dataset?.action;
+            controls.push({
+                action: ITEM_ACTION,
+                label: "Add to Harkonians",
+                icon: "fa-solid fa-store",
+                visible: true
+            });
+        }
+    );
 
-                    if (action === ITEM_ACTION) {
-                        if (!isWorldLinked()) {
-                            return;
-                        }
+    Hooks.on(
+        "renderApplicationV2",
+        (application, element) => {
+            const item = application?.document;
 
-                        const currentItem =
-                            this.document;
+            if (
+                !item ||
+                item.documentName !== "Item"
+            ) {
+                return;
+            }
 
-                        if (!currentItem) {
-                            return;
-                        }
+            const button =
+                application.element?.querySelector(
+                    `[data-action="${ITEM_ACTION}"]`
+                );
+
+            if (!button || button.dataset.harkoniansBound) {
+                return;
+            }
+
+            button.dataset.harkoniansBound = "true";
+
+            button.addEventListener(
+                "click",
+                async event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (!isWorldLinked()) {
+                        ui.notifications.error(
+                            "Harkonians | This Foundry world is not linked."
+                        );
+                        return;
+                    }
+
+                    const currentItem =
+                        application.document;
+
+                    if (!currentItem) {
+                        ui.notifications.error(
+                            "Harkonians | Could not determine the selected Item."
+                        );
+                        return;
+                    }
+
+                    try {
                         const existing =
                             foundry.applications.instances.get(
                                 "harkonians-item-publisher"
@@ -120,26 +161,28 @@ function registerItemSheetControl() {
                         if (existing) {
                             await existing.close();
                         }
-                        await new HarkoniansItemPublisher(
-                            currentItem
-                        ).render({
+
+                        const publisher =
+                            new HarkoniansItemPublisher(
+                                currentItem
+                            );
+
+                        await publisher.render({
                             force: true
                         });
+                    } catch (error) {
+                        console.error(
+                            "HarkoniansVTT | Failed to open item publisher",
+                            error
+                        );
 
-                        return;
+                        ui.notifications.error(
+                            error?.message ||
+                            "Harkonians | Failed to open the item publisher."
+                        );
                     }
-                    return originalOnClickAction(
-                        event,
-                        target
-                    );
-                };
-
-            controls.push({
-                action: ITEM_ACTION,
-                label: "Add to Harkonians",
-                icon: "fa-solid fa-store",
-                visible: true
-            });
+                }
+            );
         }
     );
 }

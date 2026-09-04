@@ -152,16 +152,26 @@ export class HarkoniansItemPublisher
                 this
             );
 
-        if (
-            !application ||
-            !isWorldLinked()
-        ) {
+        if (!application) {
+            ui.notifications.error(
+                "Harkonians | Could not open the item publisher."
+            );
+            return;
+        }
+
+        if (!isWorldLinked()) {
+            ui.notifications.error(
+                "Harkonians | This Foundry world is not linked."
+            );
             return;
         }
 
         const item = application.item;
 
         if (!item) {
+            ui.notifications.error(
+                "Harkonians | No Foundry Item."
+            );
             return;
         }
 
