@@ -435,51 +435,6 @@ Hooks.once("ready", async () => {
 
 let goldSyncInterval = null;
 let lastSyncedGold = null;
-
-async function syncLinkedActorGold() {
-    if (!isWorldLinked()) {
-        return;
-    }
-
-    const credentials =
-        getActorCredentials();
-
-    if (!credentials?.foundryActorId) {
-        return;
-    }
-
-    const actor =
-        game.actors.get(
-            credentials.foundryActorId
-        );
-
-    if (!actor) {
-        console.warn(
-            "HarkoniansVTT | Linked Actor not found."
-        );
-        return;
-    }
-
-    const gold = Number(
-        foundry.utils.getProperty(
-            actor,
-            "system.currency.gp"
-        ) ?? 0
-    );
-
-    if (gold === lastSyncedGold) {
-        return;
-    }
-
-    await synchronizeActorGold(actor);
-
-    lastSyncedGold = gold;
-
-    console.log(
-        `HarkoniansVTT | Synchronized ${gold} GP`
-    );
-}
-
 let goldSyncDirty = false;
 
 Hooks.on(
