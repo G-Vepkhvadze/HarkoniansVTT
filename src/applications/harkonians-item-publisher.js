@@ -8,7 +8,6 @@ import {
 
 import {
     buildFoundryItemData,
-    currencyToCopper,
     getApplicationFromAction,
     getItemDescription
 } from "../utils.js";
@@ -204,28 +203,16 @@ export class HarkoniansItemPublisher
         const formData =
             new FormData(form);
 
-        const amount =
-            Number(
-                formData.get("priceAmount")
-            );
+        const priceGp = Number(
+            formData.get("priceAmount")
+        );
 
-        const denomination =
-            String(
-                formData.get("priceDenomination") ||
-                "gp"
-            );
-
-        let priceCp;
-
-        try {
-            priceCp =
-                currencyToCopper(
-                    amount,
-                    denomination
-                );
-        } catch (error) {
+        if (
+            !Number.isFinite(priceGp) ||
+            priceGp < 0
+        ) {
             ui.notifications.warn(
-                error.message
+                "Price must be a valid non-negative GP amount."
             );
 
             return;
@@ -285,7 +272,7 @@ export class HarkoniansItemPublisher
             image:
             item.img,
 
-            priceCp,
+            priceGp,
 
             stock,
 
