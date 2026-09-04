@@ -118,71 +118,69 @@ function registerItemSheetControl() {
                 return;
             }
 
-            const button =
-                application.element?.querySelector(
-                    `[data-action="${ITEM_ACTION}"]`
-                );
+            const button = element?.querySelector(
+                `[data-action="${ITEM_ACTION}"]`
+            );
 
-            if (!button || button.dataset.harkoniansBound) {
+            if (!button) {
+                return;
+            }
+
+            if (button.dataset.harkoniansBound === "true") {
                 return;
             }
 
             button.dataset.harkoniansBound = "true";
 
-            button.addEventListener(
-                "click",
-                async event => {
-                    event.preventDefault();
-                    event.stopPropagation();
+            button.addEventListener("click", async event => {
+                event.preventDefault();
+                event.stopPropagation();
 
-                    if (!isWorldLinked()) {
-                        ui.notifications.error(
-                            "Harkonians | This Foundry world is not linked."
-                        );
-                        return;
-                    }
+                console.log(
+                    "HarkoniansVTT | Add to Harkonians clicked",
+                    item
+                );
 
-                    const currentItem =
-                        application.document;
-
-                    if (!currentItem) {
-                        ui.notifications.error(
-                            "Harkonians | Could not determine the selected Item."
-                        );
-                        return;
-                    }
-
-                    try {
-                        const existing =
-                            foundry.applications.instances.get(
-                                "harkonians-item-publisher"
-                            );
-
-                        if (existing) {
-                            await existing.close();
-                        }
-
-                        const publisher =
-                            new HarkoniansItemPublisher(
-                                currentItem
-                            );
-
-                        await publisher.render({
-                            force: true
-                        });
-                    } catch (error) {
-                        console.error(
-                            "HarkoniansVTT | Failed to open item publisher",
-                            error
-                        );
-
-                        ui.notifications.error(
-                            error?.message ||
-                            "Harkonians | Failed to open the item publisher."
-                        );
-                    }
+                if (!isWorldLinked()) {
+                    ui.notifications.error(
+                        "Harkonians | This world is not linked."
+                    );
+                    return;
                 }
-            );
+
+                const existing =
+                    foundry.applications.instances.get(
+                        "harkonians-item-publisher"
+                    );
+
+                if (existing) {
+                    await existing.close();
+                }
+
+                try {
+                    const publisher =
+                        new HarkoniansItemPublisher(item);
+
+                    console.log(
+                        "HarkoniansVTT | Opening item publisher"
+                    );
+
+                    await publisher.render({
+                        force: true
+                    });
+                } catch (error) {
+                    console.error(
+                        "HarkoniansVTT | Failed to open item publisher",
+                        error
+                    );
+
+                    ui.notifications.error(
+                        `Harkonians | Failed to open item publisher: ${
+                            error?.message ?? error
+                        }`
+                    );
+                }
+            });
         }
     );
 }
