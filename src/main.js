@@ -332,7 +332,11 @@ Hooks.once("init", () => {
                 await handleGoldUpdate(payload);
             } else if (event === "stock_update") {
                 await handleStockUpdate(payload);
-            } else {
+            }
+            else if (event === "refresh_gold") {
+                await syncLinkedActorGold(true);
+            }
+            else {
                 console.log("HarkoniansVTT | Unknown event type:", event);
             }
         } catch (error) {
@@ -340,6 +344,51 @@ Hooks.once("init", () => {
         }
     });
 });
+
+async function syncLinkedActorGold(
+    force = false
+) {
+    if (!isWorldLinked()) {
+        return;
+    }
+
+    const credentials =
+        getActorCredentials();
+
+    if (!credentials?.foundryActorId) {
+        return;
+    }
+
+    const actor =
+        game.actors.get(
+            credentials.foundryActorId
+        );
+
+    if (!actor) {
+        throw new Error(
+            "Linked Foundry Actor could not be found."
+        );
+    }
+
+    const gold = Number(
+        foundry.utils.getProperty(
+            actor,
+            "system.currency.gp"
+        ) ?? 0
+    );
+
+    if (
+        !force &&
+        gold === lastSyncedGold
+    ) {
+        return;
+    }
+
+    await synchronizeActorGold(actor);
+
+    lastSyncedGold = gold;
+    goldSyncDirty = false;
+}
 
 
 /* Ready*/
