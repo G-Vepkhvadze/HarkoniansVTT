@@ -22,7 +22,7 @@ import {
     getApplicationFromAction,
     extractWorldSecret
 } from "../utils.js";
-import {synchronizeActorGold} from "../api/harkonians-gold.js";
+import {getActorGold, synchronizeActorGold} from "../api/harkonians-gold.js";
 
 const {
     ApplicationV2,
@@ -291,11 +291,6 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
                         characterToken
                     });
 
-                    await synchronizeActorGold(actor);
-
-                    const actor =
-                        game.actors.get(foundryActorId);
-
                     ui.notifications.info(
                         `${actor.name} was linked to Harkonians.`
                     );
@@ -303,6 +298,19 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
                     await application.render({
                         force: true
                     });
+
+                    try {
+                        await synchronizeActorGold(actor);
+                    } catch (error) {
+                        console.error(
+                            "HarkoniansVTT | Initial gold sync failed:",
+                            error
+                        );
+
+                        ui.notifications.warn(
+                            "Harkonians | Character linked, but initial gold synchronization failed."
+                        );
+                    }
 
                     return;
                 }

@@ -199,7 +199,8 @@ export async function getRealtimeToken() {
  * @returns {Promise<Object>}
  */
 export async function getGold() {
-  const credentials = getActorCredentials();
+  const credentials =
+      getActorCredentials();
 
   if (!credentials?.foundryActorId) {
     throw new Error(
@@ -207,10 +208,12 @@ export async function getGold() {
     );
   }
 
-  const params = new URLSearchParams({
-    worldId: game.world.id,
-    actorId: credentials.foundryActorId
-  });
+  const params =
+      new URLSearchParams({
+        worldId: game.world.id,
+        actorId:
+        credentials.foundryActorId
+      });
 
   return harkoniansFetch(
       `/foundry/gold?${params.toString()}`
@@ -232,16 +235,13 @@ export async function syncGold(gold) {
     );
   }
 
-  return harkoniansFetch(
-      "/foundry/gold/sync",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          foundryWorldId: game.world.id,
-          foundryActorId:
-          credentials.foundryActorId,
-          gold
-        })
-      }
-  );
+  return harkoniansFetch("/foundry/gold/sync", {
+    method: "POST",
+    body: JSON.stringify({
+      foundryWorldId: game.world.id,
+      foundryActorId:
+      credentials.foundryActorId,
+      gold
+    })
+  });
 }
