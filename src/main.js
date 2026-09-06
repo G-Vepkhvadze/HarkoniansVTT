@@ -79,8 +79,7 @@ function registerItemSheetControl() {
     Hooks.on(
         "getHeaderControlsApplicationV2",
         (application, controls) => {
-            const item =
-                application?.document;
+            const item = application?.document;
 
             if (
                 !item ||
@@ -92,98 +91,45 @@ function registerItemSheetControl() {
             if (
                 controls.some(
                     control =>
-                        control.action ===
-                        ITEM_ACTION
+                        control.action === ITEM_ACTION
                 )
             ) {
                 return;
             }
 
-            controls.push({
-                action: ITEM_ACTION,
-                label: "Add to Harkonians",
-                icon: "fa-solid fa-store",
-                visible: true
-            });
-        }
-    );
+            // Register the action on THIS Item Sheet.
+            application.options.actions ??= {};
 
-    Hooks.on(
-        "renderApplicationV2",
-        (application) => {
-            const item =
-                application?.document;
+            application.options.actions[ITEM_ACTION] =
+                async function (event, target) {
+                    const item = this?.document;
 
-            if (
-                !item ||
-                item.documentName !== "Item"
-            ) {
-                return;
-            }
-
-            const element =
-                application.element;
-
-            if (!element) {
-                return;
-            }
-
-            const control =
-                element.querySelector(
-                    `[data-action="${ITEM_ACTION}"]`
-                );
-
-            if (!control) {
-                return;
-            }
-
-            if (
-                control.dataset.harkoniansBound ===
-                "true"
-            ) {
-                return;
-            }
-
-            control.dataset.harkoniansBound =
-                "true";
-
-            control.addEventListener(
-                "click",
-                async event => {
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    if (!isWorldLinked()) {
+                    if (!item) {
                         ui.notifications.error(
-                            "Harkonians | This world is not linked."
+                            "Harkonians | Could not determine the selected Item."
                         );
                         return;
                     }
 
-                    if (!item) {
+                    if (!isWorldLinked()) {
                         ui.notifications.error(
-                            "Harkonians | Could not determine the Item."
+                            "Harkonians | This Foundry world is not linked."
                         );
                         return;
                     }
 
                     try {
                         const existing =
-                            foundry
-                                .applications
-                                .instances
-                                .get(
-                                    "harkonians-item-publisher"
-                                );
+                            foundry.applications.instances.get(
+                                "harkonians-item-publisher"
+                            );
 
                         if (existing) {
                             await existing.close();
                         }
 
                         const publisher =
-                            new HarkoniansItemPublisher(
-                                item
-                            );
+                            new HarkoniansItemPublisher(item);
 
                         await publisher.render({
                             force: true
@@ -201,8 +147,15 @@ function registerItemSheetControl() {
                             }`
                         );
                     }
-                }
-            );
+                };
+
+            // Add the button to the Item Sheet header/settings menu.
+            controls.push({
+                action: ITEM_ACTION,
+                label: "Add to Harkonians",
+                icon: "fa-solid fa-store",
+                visible: true
+            });
         }
     );
 }
@@ -417,7 +370,7 @@ Hooks.once("ready", async () => {
                         );
                     });
             },
-            5 * 60 * 1000
+            60 * 1000
         );
     
     // Connect to realtime if world and character are linked
