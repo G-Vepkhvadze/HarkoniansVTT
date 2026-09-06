@@ -312,6 +312,12 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
                         );
                     }
 
+                    ui.notifications.info(
+                        `${actor.name} was linked to Harkonians successfully.`
+                    );
+
+                    await application.close();
+
                     return;
                 }
 
