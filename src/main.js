@@ -1,12 +1,8 @@
 
 import {
     registerSettings,
-    getWorldSecret,
     isWorldLinked,
     getActorCredentials,
-    saveActorCredentials,
-    clearActorCredentials,
-    clearWorldConnection
 } from "./state.js";
 
 import {
@@ -16,6 +12,10 @@ import {
 import {
     HarkoniansItemPublisher
 } from "./applications/harkonians-item-publisher.js";
+
+import {
+    synchronizeActorGold
+} from "./api/harkonians-gold.js";
 
 import {
     connect as connectRealtime,
@@ -463,10 +463,13 @@ async function handleStockUpdate(payload) {
         return;
     }
 
-    const newStock = Math.max(
-        0,
-        Math.floor(stock)
-    );
+    const newStock =
+        stock === -1
+            ? -1
+            : Math.max(
+                0,
+                Math.floor(stock)
+            );
 
     await foundryItem.setFlag(
         "harkoniansvtt",
@@ -505,7 +508,7 @@ Hooks.once("init", () => {
                 await handleStockUpdate(payload);
             }
             else if (event === "refresh_gold") {
-                await syncLinkedActorGold(true);
+                await syncLinkedActorGold();
             }
             else {
                 console.log("HarkoniansVTT | Unknown event type:", event);
@@ -575,12 +578,12 @@ function startGoldSync() {
         return;
     }
 
-    // Sync once immediately.
-    syncLinkedActorGold();
+    void syncLinkedActorGold();
 
-    // Then reconcile every 60 seconds.
     goldSyncInterval = setInterval(
-        syncLinkedActorGold,
+        () => {
+            void syncLinkedActorGold();
+        },
         60_000
     );
 
@@ -634,32 +637,6 @@ Hooks.once("ready", async () => {
         }
     }
 });
-
-let lastSyncedGold = null;
-let goldSyncDirty = false;
-
-Hooks.on(
-    "updateActor",
-    (actor, changes) => {
-        const credentials =
-            getActorCredentials();
-
-        if (
-            credentials?.foundryActorId !== actor.id
-        ) {
-            return;
-        }
-
-        if (
-            changes?.system?.currency?.gp === undefined
-        ) {
-            return;
-        }
-
-        goldSyncDirty = true;
-    }
-);
-
 
 // Handle module shutdown
 Hooks.on("shutdown", () => {

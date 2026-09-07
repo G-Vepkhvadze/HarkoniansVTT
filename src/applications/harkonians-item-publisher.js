@@ -1,4 +1,3 @@
-
 import { publishItem } from "../api/client.js";
 
 import {
@@ -97,12 +96,10 @@ export class HarkoniansItemPublisher
             };
         }
 
-        const alreadyPublished =
-            Boolean(
-                item.getFlag(
-                    "harkoniansvtt",
-                    "storeItemId"
-                )
+        const storeItemId =
+            item.getFlag(
+                "harkoniansvtt",
+                "storeItemId"
             );
 
         return {
@@ -114,7 +111,10 @@ export class HarkoniansItemPublisher
                 uuid: item.uuid
             },
 
-            alreadyPublished
+            alreadyPublished:
+                Boolean(storeItemId),
+
+            storeItemId
         };
     }
 
@@ -174,20 +174,6 @@ export class HarkoniansItemPublisher
             return;
         }
 
-        const existingStoreItemId =
-            item.getFlag(
-                "harkoniansvtt",
-                "storeItemId"
-            );
-
-        if (existingStoreItemId) {
-            ui.notifications.info(
-                `${item.name} is already in Harkonians.`
-            );
-
-            return;
-        }
-
         const form =
             target.closest("form") ??
             application.element?.querySelector("form");
@@ -203,9 +189,14 @@ export class HarkoniansItemPublisher
         const formData =
             new FormData(form);
 
-        const priceGp = Number(
-            formData.get("priceAmount")
-        );
+        // ---------------------------------------------------------
+        // Price
+        // ---------------------------------------------------------
+
+        const priceGp =
+            Number(
+                formData.get("priceAmount")
+            );
 
         if (
             !Number.isFinite(priceGp) ||
@@ -218,15 +209,21 @@ export class HarkoniansItemPublisher
             return;
         }
 
+        // ---------------------------------------------------------
+        // Stock
+        //
+        // Empty = unlimited
+        // Number = exact stock amount to add
+        // ---------------------------------------------------------
+
         const stockRaw =
             String(
-                formData.get("stock") ||
-                "unlimited"
-            );
+                formData.get("stock") ?? ""
+            ).trim();
 
         let stock = null;
 
-        if (stockRaw !== "unlimited") {
+        if (stockRaw !== "") {
             stock = Number(stockRaw);
 
             if (
@@ -241,27 +238,31 @@ export class HarkoniansItemPublisher
             }
         }
 
+        // ---------------------------------------------------------
+        // Build payload
+        // ---------------------------------------------------------
+
         const payload = {
             foundryWorldId:
-            game.world.id,
+                game.world.id,
 
             foundryItemId:
-            item.id,
+                item.id,
 
             foundryItemUuid:
-            item.uuid,
+                item.uuid,
 
             foundrySystemId:
-            game.system.id,
+                game.system.id,
 
             foundrySystemVersion:
-            game.system.version,
+                game.system.version,
 
             name:
-            item.name,
+                item.name,
 
             type:
-            item.type,
+                item.type,
 
             description:
                 getItemDescription(item),
@@ -270,12 +271,19 @@ export class HarkoniansItemPublisher
                 item.system?.rarity ?? "",
 
             image:
-            item.img,
+                item.img,
 
             priceGp,
 
             stock,
 
+            /*
+             * IMPORTANT:
+             *
+             * This contains the original Foundry Item data.
+             * The marketplace description sanitizer does not
+             * modify this.
+             */
             foundryItemData:
                 buildFoundryItemData(item)
         };
@@ -307,15 +315,41 @@ export class HarkoniansItemPublisher
                 );
             }
 
+            /*
+             * Keep the Store Item ID on the Foundry Item.
+             *
+             * This does NOT prevent future publishing.
+             * It simply identifies which Harkonians item this
+             * Foundry Item corresponds to.
+             */
             await item.setFlag(
                 "harkoniansvtt",
                 "storeItemId",
                 storeItemId
             );
 
-            ui.notifications.info(
-                `${item.name} was added to Harkonians.`
-            );
+            if (
+                response?.addedToExistingStock === true
+            ) {
+                const addedStock =
+                    response?.item?.stock;
+
+                if (
+                    typeof addedStock === "number"
+                ) {
+                    ui.notifications.info(
+                        `${item.name} stock was increased. Total stock: ${addedStock}.`
+                    );
+                } else {
+                    ui.notifications.info(
+                        `${item.name} stock was increased in Harkonians.`
+                    );
+                }
+            } else {
+                ui.notifications.info(
+                    `${item.name} was added to Harkonians.`
+                );
+            }
 
             await application.close();
 

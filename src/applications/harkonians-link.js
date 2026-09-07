@@ -22,7 +22,7 @@ import {
     getApplicationFromAction,
     extractWorldSecret
 } from "../utils.js";
-import {getActorGold, synchronizeActorGold} from "../api/harkonians-gold.js";
+import {synchronizeActorGold} from "../api/harkonians-gold.js";
 
 const {
     ApplicationV2,
@@ -151,13 +151,6 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
              */
             await clearActorCredentials();
 
-            ui.notifications.info(
-                "Harkonians world linked successfully."
-            );
-
-            await application.render({
-                force: true
-            });
         } catch (error) {
             console.error(
                 "HarkoniansVTT | World linking failed",
@@ -289,14 +282,6 @@ export class HarkoniansLinkApplication extends HarkoniansLinkBase {
                         foundryActorUuid: actor.uuid,
                         characterId,
                         characterToken
-                    });
-
-                    ui.notifications.info(
-                        `${actor.name} was linked to Harkonians.`
-                    );
-
-                    await application.render({
-                        force: true
                     });
 
                     try {

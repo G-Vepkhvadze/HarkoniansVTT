@@ -4,30 +4,6 @@
  * Small Foundry-independent utility functions.
  */
 
-export function currencyToCopper(amount, denomination) {
-    const numericAmount = Number(amount);
-
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-        throw new Error("Price must be greater than zero.");
-    }
-
-    const multipliers = {
-        pp: 1000,
-        gp: 100,
-        ep: 50,
-        sp: 10,
-        cp: 1
-    };
-
-    const multiplier = multipliers[denomination];
-
-    if (!multiplier) {
-        throw new Error("Invalid currency denomination.");
-    }
-
-    return Math.round(numericAmount * multiplier);
-}
-
 export function getApplicationFromAction(target, fallback = null) {
     if (
         fallback &&
