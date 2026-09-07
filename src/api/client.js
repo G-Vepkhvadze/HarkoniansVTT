@@ -199,8 +199,7 @@ export async function getRealtimeToken() {
  * @returns {Promise<Object>}
  */
 export async function getGold() {
-  const credentials =
-      getActorCredentials();
+  const credentials = getActorCredentials();
 
   if (!credentials?.foundryActorId) {
     throw new Error(
@@ -208,12 +207,11 @@ export async function getGold() {
     );
   }
 
-  const params =
-      new URLSearchParams({
-        worldId: game.world.id,
-        actorId:
-        credentials.foundryActorId
-      });
+  const params = new URLSearchParams({
+    worldId: game.world.id,
+    actorId:
+    credentials.foundryActorId
+  });
 
   return harkoniansFetch(
       `/foundry/gold?${params.toString()}`
@@ -223,25 +221,25 @@ export async function getGold() {
 /**
  * Sync character gold balance.
  * 
- * @param {number} gold - The gold amount in copper pieces
+ * @param {number} gold
  * @returns {Promise<Object>}
  */
 export async function syncGold(gold) {
   const credentials = getActorCredentials();
 
-  if (!credentials?.foundryActorId) {
-    throw new Error(
-        "No Foundry Actor is linked."
-    );
+  if (
+      !credentials?.foundryActorId ||
+      !game?.world?.id
+  ) {
+    throw new Error("No linked Foundry actor.");
   }
 
   return harkoniansFetch("/foundry/gold/sync", {
     method: "POST",
     body: JSON.stringify({
       foundryWorldId: game.world.id,
-      foundryActorId:
-      credentials.foundryActorId,
-      gold
+      foundryActorId: credentials.foundryActorId,
+      gold: Math.max(0, Math.floor(Number(gold) || 0))
     })
   });
 }

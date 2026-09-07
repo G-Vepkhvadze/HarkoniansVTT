@@ -1,5 +1,4 @@
 import {
-    getGold,
     syncGold
 } from "./client.js";
 
@@ -9,19 +8,21 @@ import {
 } from "../state.js";
 
 export function getActorGold(actor) {
-    return Number(
-        foundry.utils.getProperty(
-            actor,
-            "system.currency.gp"
-        ) ?? 0
+    return Math.max(
+        0,
+        Math.floor(
+            Number(
+                foundry.utils.getProperty(
+                    actor,
+                    "system.currency.gp"
+                ) ?? 0
+            )
+        )
     );
 }
 
-export async function synchronizeActorGold(
-    actor
-) {
-    const credentials =
-        getActorCredentials();
+export async function synchronizeActorGold(actor) {
+    const credentials = getActorCredentials();
 
     if (
         !isWorldLinked() ||
@@ -31,6 +32,14 @@ export async function synchronizeActorGold(
     ) {
         throw new Error(
             "No Harkonians character is linked."
+        );
+    }
+
+    if (
+        credentials.foundryActorId !== actor.id
+    ) {
+        throw new Error(
+            "Actor does not match the linked Harkonians character."
         );
     }
 

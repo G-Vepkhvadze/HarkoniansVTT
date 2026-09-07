@@ -32,6 +32,8 @@ import {
 
 const MODULE_ID = "harkoniansvtt";
 const ITEM_ACTION = "harkoniansAddItem";
+let goldSyncInterval = null;
+let goldSyncInProgress = false;
 
 function registerSceneControl() {
     Hooks.on(
@@ -245,9 +247,70 @@ async function handlePurchaseEvent(payload) {
  * @param {Object} payload - Gold update payload
  */
 async function handleGoldUpdate(payload) {
-    // Update local state or trigger a sync
-    // The authoritative balance is in Harkonians, not Foundry
-    console.log("HarkoniansVTT | Gold updated:", payload);
+    const credentials = getActorCredentials();
+
+    if (!credentials?.foundryActorId) {
+        return;
+    }
+
+    const actorId = payload?.actorId;
+    const gold = Number(payload?.gold);
+
+    if (!actorId || !Number.isFinite(gold)) {
+        console.warn(
+            "HarkoniansVTT | Invalid gold update:",
+            payload
+        );
+        return;
+    }
+
+    // Never modify an unrelated actor.
+    if (
+        actorId !== credentials.foundryActorId
+    ) {
+        console.log(
+            "HarkoniansVTT | Gold update for different actor, ignoring."
+        );
+        return;
+    }
+
+    const actor = game.actors.get(actorId);
+
+    if (!actor) {
+        console.warn(
+            "HarkoniansVTT | Actor not found for gold update:",
+            actorId
+        );
+        return;
+    }
+
+    const newGold = Math.max(
+        0,
+        Math.floor(gold)
+    );
+
+    const currentGold = Number(
+        foundry.utils.getProperty(
+            actor,
+            "system.currency.gp"
+        ) ?? 0
+    );
+
+    if (currentGold === newGold) {
+        return;
+    }
+
+    await actor.update({
+        "system.currency.gp": newGold
+    });
+
+    console.log(
+        `HarkoniansVTT | Gold updated from Harkonians: ${newGold} GP`
+    );
+
+    ui.notifications.info(
+        `${actor.name}'s gold updated to ${newGold} GP.`
+    );
 }
 
 /**
@@ -256,10 +319,55 @@ async function handleGoldUpdate(payload) {
  * @param {Object} payload - Stock update payload
  */
 async function handleStockUpdate(payload) {
-    // Update local cache if needed
-    console.log("HarkoniansVTT | Stock updated:", payload);
-}
+    const storeItemId = payload?.itemId;
+    const stock = Number(payload?.stock);
 
+    if (!storeItemId) {
+        console.warn(
+            "HarkoniansVTT | Stock update missing Harkonians item ID:",
+            payload
+        );
+        return;
+    }
+
+    if (!Number.isFinite(stock)) {
+        console.warn(
+            "HarkoniansVTT | Invalid stock value:",
+            payload
+        );
+        return;
+    }
+
+    const foundryItem = game.items.find(item =>
+        item.getFlag(
+            "harkoniansvtt",
+            "storeItemId"
+        ) === storeItemId
+    );
+
+    if (!foundryItem) {
+        console.log(
+            "HarkoniansVTT | No published Foundry item found for stock update:",
+            storeItemId
+        );
+        return;
+    }
+
+    const newStock = Math.max(
+        0,
+        Math.floor(stock)
+    );
+
+    await foundryItem.setFlag(
+        "harkoniansvtt",
+        "stock",
+        newStock
+    );
+
+    console.log(
+        `HarkoniansVTT | Stock updated: ${foundryItem.name} → ${newStock}`
+    );
+}
 
 /* Initialization*/
 
@@ -298,49 +406,91 @@ Hooks.once("init", () => {
     });
 });
 
-async function syncLinkedActorGold(
-    force = false
-) {
-    if (!isWorldLinked()) {
-        return;
-    }
-
-    const credentials =
-        getActorCredentials();
-
-    if (!credentials?.foundryActorId) {
-        return;
-    }
-
-    const actor =
-        game.actors.get(
-            credentials.foundryActorId
-        );
-
-    if (!actor) {
-        throw new Error(
-            "Linked Foundry Actor could not be found."
-        );
-    }
-
-    const gold = Number(
-        foundry.utils.getProperty(
-            actor,
-            "system.currency.gp"
-        ) ?? 0
-    );
-
+async function syncLinkedActorGold() {
     if (
-        !force &&
-        gold === lastSyncedGold
+        goldSyncInProgress ||
+        !isWorldLinked()
     ) {
         return;
     }
 
-    await synchronizeActorGold(actor);
+    const credentials = getActorCredentials();
 
-    lastSyncedGold = gold;
-    goldSyncDirty = false;
+    if (
+        !credentials?.characterId ||
+        !credentials?.foundryActorId
+    ) {
+        return;
+    }
+
+    const actor = game.actors.get(
+        credentials.foundryActorId
+    );
+
+    if (!actor) {
+        console.warn(
+            "HarkoniansVTT | Linked actor not found:",
+            credentials.foundryActorId
+        );
+        return;
+    }
+
+    goldSyncInProgress = true;
+
+    try {
+        const gold = Number(
+            foundry.utils.getProperty(
+                actor,
+                "system.currency.gp"
+            ) ?? 0
+        );
+
+        await synchronizeActorGold(actor);
+
+        console.log(
+            `HarkoniansVTT | Gold synchronized: ${gold} GP`
+        );
+    } catch (error) {
+        console.error(
+            "HarkoniansVTT | Gold synchronization failed:",
+            error
+        );
+    } finally {
+        goldSyncInProgress = false;
+    }
+}
+
+function startGoldSync() {
+    if (goldSyncInterval) {
+        return;
+    }
+
+    // Sync once immediately.
+    syncLinkedActorGold();
+
+    // Then reconcile every 60 seconds.
+    goldSyncInterval = setInterval(
+        syncLinkedActorGold,
+        60_000
+    );
+
+    console.log(
+        "HarkoniansVTT | Gold synchronization started (60s)."
+    );
+}
+
+function stopGoldSync() {
+    if (!goldSyncInterval) {
+        return;
+    }
+
+    clearInterval(goldSyncInterval);
+    goldSyncInterval = null;
+    goldSyncInProgress = false;
+
+    console.log(
+        "HarkoniansVTT | Gold synchronization stopped."
+    );
 }
 
 
@@ -357,36 +507,24 @@ Hooks.once("ready", async () => {
         }
     );
 
-    await syncLinkedActorGold();
-
-    goldSyncInterval =
-        window.setInterval(
-            () => {
-                syncLinkedActorGold()
-                    .catch(error => {
-                        console.error(
-                            "HarkoniansVTT | Scheduled gold sync failed:",
-                            error
-                        );
-                    });
-            },
-            60 * 1000
-        );
-    
-    // Connect to realtime if world and character are linked
     if (isWorldLinked()) {
         const credentials = getActorCredentials();
+
         if (credentials?.characterId) {
             try {
                 await connectRealtime();
             } catch (error) {
-                console.error("HarkoniansVTT | Failed to connect to realtime:", error);
+                console.error(
+                    "HarkoniansVTT | Failed to connect to realtime:",
+                    error
+                );
             }
+
+            startGoldSync();
         }
     }
 });
 
-let goldSyncInterval = null;
 let lastSyncedGold = null;
 let goldSyncDirty = false;
 
@@ -415,17 +553,19 @@ Hooks.on(
 
 // Handle module shutdown
 Hooks.on("shutdown", () => {
-    console.log("HarkoniansVTT | Shutting down, disconnecting realtime...");
-    disconnectRealtime();
+    console.log(
+        "HarkoniansVTT | Shutting down, disconnecting realtime..."
+    );
 
-    if (goldSyncInterval) {
-        clearInterval(goldSyncInterval);
-        goldSyncInterval = null;
-    }
+    stopGoldSync();
+    disconnectRealtime();
 });
 
-// Optional: Handle world close
 Hooks.on("closeWorld", () => {
-    console.log("HarkoniansVTT | World closed, disconnecting realtime...");
+    console.log(
+        "HarkoniansVTT | World closed, disconnecting realtime..."
+    );
+
+    stopGoldSync();
     disconnectRealtime();
 });
