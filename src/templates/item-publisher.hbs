@@ -42,22 +42,20 @@
                     Stock
                 </label>
 
-                <select
+                <input
                         id="harkonians-stock"
                         name="stock"
-                >
-                    <option value="unlimited" selected>
-                        Unlimited
-                    </option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="Leave empty for unlimited"
+                />
+
+                <small>
+                    Leave empty for unlimited stock.
+                </small>
             </div>
+
 
             <div class="harkonians-actions">
                 <button
