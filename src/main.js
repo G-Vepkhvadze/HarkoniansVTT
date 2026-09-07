@@ -168,75 +168,185 @@ function registerItemSheetControl() {
  * @param {Object} payload - Purchase payload
  */
 async function handlePurchaseEvent(payload) {
-    const { purchaseId, actorId, quantity, item } = payload;
-    
-    // Find the actor
+    const {
+        purchaseId,
+        actorId,
+        quantity,
+        item
+    } = payload;
+
+    if (!purchaseId || !actorId || !item) {
+        console.error(
+            "HarkoniansVTT | Invalid purchase payload:",
+            payload
+        );
+        return;
+    }
+
     const actor = game.actors.get(actorId);
-    
+
     if (!actor) {
-        console.error("HarkoniansVTT | Actor not found for purchase:", actorId);
+        console.error(
+            "HarkoniansVTT | Actor not found for purchase:",
+            actorId
+        );
         return;
     }
-    
-    // Verify this actor belongs to this client
+
     const credentials = getActorCredentials();
+
     if (credentials?.foundryActorId !== actorId) {
-        console.log("HarkoniansVTT | Purchase for different actor, ignoring");
+        console.log(
+            "HarkoniansVTT | Purchase for different actor, ignoring."
+        );
         return;
     }
-    
-    // Build item data from foundryItemData
+
+    const purchaseQuantity = Math.max(
+        1,
+        Math.floor(Number(quantity) || 1)
+    );
+
+    /*
+     * Prevent the same purchase from creating duplicate items
+     * if the realtime event is delivered more than once.
+     */
+    const existingItems = actor.items.filter(item =>
+        item.getFlag(
+            "harkoniansvtt",
+            "purchaseId"
+        ) === purchaseId
+    );
+
+    if (existingItems.length >= purchaseQuantity) {
+        console.log(
+            "HarkoniansVTT | Purchase already processed:",
+            purchaseId
+        );
+
+        try {
+            await acknowledgePurchase(
+                purchaseId,
+                actor.id,
+                existingItems[0].id
+            );
+        } catch (error) {
+            console.error(
+                "HarkoniansVTT | Failed to acknowledge existing purchase:",
+                error
+            );
+        }
+
+        return;
+    }
+
     let itemData;
+
     try {
-        itemData = structuredClone(item.foundryItemData || {});
-        
-        // Remove internal Foundry fields
+        itemData = structuredClone(
+            item.foundryItemData || {}
+        );
+
         delete itemData._id;
         delete itemData._stats;
-        
-        // Ensure we have a name
+
         if (!itemData.name) {
             itemData.name = item.name;
         }
-        
-        // Ensure we have type
+
         if (!itemData.type) {
             itemData.type = item.type || "item";
         }
     } catch (error) {
-        console.error("HarkoniansVTT | Failed to clone item data:", error);
+        console.error(
+            "HarkoniansVTT | Failed to prepare purchased item:",
+            error
+        );
+
+        await reportPurchaseFailure(
+            purchaseId,
+            actor.id,
+            error?.message || "Failed to prepare item"
+        );
+
         return;
     }
-    
-    // Create the item in Foundry using v13 embedded documents API
+
     try {
-        const createdItems = await actor.createEmbeddedDocuments("Item", [itemData]);
-        const createdItem = createdItems[0];
-        
-        if (!createdItem) {
-            throw new Error("No item was created");
+        const itemsToCreate = Array.from(
+            {
+                length:
+                    purchaseQuantity -
+                    existingItems.length
+            },
+            () => structuredClone(itemData)
+        );
+
+        const createdItems =
+            await actor.createEmbeddedDocuments(
+                "Item",
+                itemsToCreate
+            );
+
+        if (
+            !createdItems ||
+            createdItems.length !== itemsToCreate.length
+        ) {
+            throw new Error(
+                `Expected ${itemsToCreate.length} item(s), created ${createdItems?.length ?? 0}.`
+            );
         }
-        
-        console.log("HarkoniansVTT | Item created from purchase:", createdItem.id);
-        
-        // Acknowledge the purchase
-        try {
-            await acknowledgePurchase(purchaseId, actor.id, createdItem.id);
-            ui.notifications.info(`Received ${item.name} from Harkonians purchase.`);
-        } catch (ackError) {
-            console.error("HarkoniansVTT | Failed to acknowledge purchase:", ackError);
-            // Item was created but we couldn't acknowledge
-            // The purchase will stay PENDING but item is in inventory
+
+        /*
+         * Mark every created item with this purchase ID.
+         * This prevents duplicate delivery if the realtime
+         * message is received more than once.
+         */
+        for (const createdItem of createdItems) {
+            await createdItem.setFlag(
+                "harkoniansvtt",
+                "purchaseId",
+                purchaseId
+            );
         }
-        
+
+        const acknowledgedItem =
+            createdItems[0] ||
+            existingItems[0];
+
+        await acknowledgePurchase(
+            purchaseId,
+            actor.id,
+            acknowledgedItem.id
+        );
+
+        ui.notifications.info(
+            purchaseQuantity === 1
+                ? `Received ${item.name} from Harkonians.`
+                : `Received ${purchaseQuantity}× ${item.name} from Harkonians.`
+        );
+
+        console.log(
+            `HarkoniansVTT | Purchase ${purchaseId} delivered successfully.`
+        );
+
     } catch (error) {
-        console.error("HarkoniansVTT | Failed to create item from purchase:", error);
-        
-        // Report failure
+        console.error(
+            "HarkoniansVTT | Failed to create purchased item:",
+            error
+        );
+
         try {
-            await reportPurchaseFailure(purchaseId, error.message);
+            await reportPurchaseFailure(
+                purchaseId,
+                actor.id,
+                error?.message || "Failed to create item"
+            );
         } catch (reportError) {
-            console.error("HarkoniansVTT | Failed to report purchase failure:", reportError);
+            console.error(
+                "HarkoniansVTT | Failed to report purchase failure:",
+                reportError
+            );
         }
     }
 }

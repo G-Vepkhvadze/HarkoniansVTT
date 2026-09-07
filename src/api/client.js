@@ -173,12 +173,17 @@ export async function acknowledgePurchase(purchaseId, foundryActorId, foundryIte
  * @param {string} error - The error message
  * @returns {Promise<Object>}
  */
-export async function reportPurchaseFailure(purchaseId, error) {
+export async function reportPurchaseFailure(
+    purchaseId,
+    foundryActorId,
+    error
+) {
   return harkoniansFetch("/foundry/purchase", {
     method: "POST",
     body: JSON.stringify({
       purchaseId,
       status: "failed",
+      foundryActorId,
       error
     })
   });
