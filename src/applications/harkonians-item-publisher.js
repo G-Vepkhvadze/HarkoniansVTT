@@ -23,6 +23,159 @@ const HarkoniansPublisherBase =
 
 
 /**
+ * Convert a Foundry-local image path into base64 data.
+ *
+ * Remote HTTP(S) images are left as URLs because the
+ * Emporium can download those directly.
+ *
+ * @param {string} imagePath
+ * @returns {Promise<Object|null>}
+ */
+async function prepareImagePayload(imagePath) {
+    if (
+        !imagePath ||
+        typeof imagePath !== "string"
+    ) {
+        return null;
+    }
+
+    const trimmed =
+        imagePath.trim();
+
+    if (!trimmed) {
+        return null;
+    }
+
+    /*
+     * Remote URL.
+     *
+     * The Emporium can download this itself, so there is
+     * no reason to transfer the image bytes through Foundry.
+     */
+    if (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://")
+    ) {
+        return {
+            type: "url",
+            url: trimmed
+        };
+    }
+
+    /*
+     * Data URI.
+     *
+     * Some Foundry assets can potentially already be represented
+     * as inline data.
+     */
+    if (
+        trimmed.startsWith("data:")
+    ) {
+        const match =
+            trimmed.match(
+                /^data:([^;]+);base64,(.+)$/s
+            );
+
+        if (!match) {
+            throw new Error(
+                "Foundry image data URI is invalid."
+            );
+        }
+
+        return {
+            type: "base64",
+            contentType: match[1],
+            fileName: "foundry-image",
+            data: match[2]
+        };
+    }
+
+    /*
+     * Foundry-local path.
+     *
+     * Fetch the actual asset from the running Foundry server.
+     */
+    try {
+        const response =
+            await fetch(trimmed);
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const blob =
+            await response.blob();
+
+        const arrayBuffer =
+            await blob.arrayBuffer();
+
+        const bytes =
+            new Uint8Array(arrayBuffer);
+
+        /*
+         * Convert Uint8Array to base64 without using
+         * String.fromCharCode(...bytes) on the entire file,
+         * which can overflow the argument limit for larger images.
+         */
+        const chunkSize = 0x8000;
+        let binary = "";
+
+        for (
+            let offset = 0;
+            offset < bytes.length;
+            offset += chunkSize
+        ) {
+            const chunk =
+                bytes.subarray(
+                    offset,
+                    Math.min(
+                        offset + chunkSize,
+                        bytes.length
+                    )
+                );
+
+            binary += String.fromCharCode(
+                ...chunk
+            );
+        }
+
+        const base64 =
+            btoa(binary);
+
+        const fileName =
+            trimmed
+                .split("/")
+                .pop()
+                ?.split("?")[0]
+                ?.split("#")[0]
+            || "foundry-image";
+
+        return {
+            type: "base64",
+            contentType:
+                blob.type ||
+                "application/octet-stream",
+            fileName,
+            data: base64
+        };
+
+    } catch (error) {
+        console.error(
+            "HarkoniansVTT | Failed to read Foundry image:",
+            trimmed,
+            error
+        );
+
+        throw new Error(
+            `Failed to read Foundry image "${trimmed}".`
+        );
+    }
+}
+
+
+/**
  * Application for adding one specific Foundry Item
  * to the Harkonians store.
  */
@@ -165,7 +318,8 @@ export class HarkoniansItemPublisher
             return;
         }
 
-        const item = application.item;
+        const item =
+            application.item;
 
         if (!item) {
             ui.notifications.error(
@@ -239,6 +393,31 @@ export class HarkoniansItemPublisher
         }
 
         // ---------------------------------------------------------
+        // Prepare image
+        // ---------------------------------------------------------
+
+        let imageData = null;
+
+        try {
+            imageData =
+                await prepareImagePayload(
+                    item.img
+                );
+        } catch (error) {
+            console.error(
+                "HarkoniansVTT | Image preparation failed:",
+                error
+            );
+
+            ui.notifications.error(
+                error?.message ||
+                "Failed to prepare the Foundry image."
+            );
+
+            return;
+        }
+
+        // ---------------------------------------------------------
         // Build payload
         // ---------------------------------------------------------
 
@@ -270,19 +449,27 @@ export class HarkoniansItemPublisher
             rarity:
                 item.system?.rarity ?? "",
 
+            /*
+             * Keep the original Foundry image reference.
+             * This is useful for source metadata and debugging.
+             */
             image:
                 item.img,
+
+            /*
+             * Contains the actual image when Foundry is using
+             * a local path, or a URL descriptor for remote images.
+             */
+            imageData,
 
             priceGp,
 
             stock,
 
             /*
-             * IMPORTANT:
-             *
-             * This contains the original Foundry Item data.
+             * This is the original Foundry Item JSON.
              * The marketplace description sanitizer does not
-             * modify this.
+             * modify this data.
              */
             foundryItemData:
                 buildFoundryItemData(item)
@@ -319,8 +506,6 @@ export class HarkoniansItemPublisher
              * Keep the Store Item ID on the Foundry Item.
              *
              * This does NOT prevent future publishing.
-             * It simply identifies which Harkonians item this
-             * Foundry Item corresponds to.
              */
             await item.setFlag(
                 "harkoniansvtt",
