@@ -1,7 +1,7 @@
 {
   "id": "harkoniansvtt",
   "title": "HarkoniansVTT",
-  "version": "6.0.0",
+  "version": "6.1.0",
 
   "compatibility": {
     "minimum": "13",
