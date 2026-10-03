@@ -22,9 +22,13 @@ const API_BASE = "https://api.harkonians.quest/v1";
 async function harkoniansFetch(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
   
-  const defaultHeaders = {
-    "Content-Type": "application/json"
-  };
+  const defaultHeaders = {};
+
+  // JSON is the default for API calls, but never set Content-Type for
+  // FormData requests: the browser must add the multipart boundary.
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders["Content-Type"] = "application/json";
+  }
   
   // Add world secret if available
   const worldSecret = getWorldSecret();
@@ -247,4 +251,44 @@ export async function syncGold(gold) {
       gold: Math.max(0, Math.floor(Number(gold) || 0))
     })
   });
+}
+
+
+/**
+ * Upload a Foundry-local image to Harkonians/Supabase Storage.
+ *
+ * The image is uploaded separately from the item JSON so large WebP files
+ * do not have to be base64-encoded into the publish request.
+ *
+ * @param {File|Blob} file
+ * @param {string} fileName
+ * @returns {Promise<Object>}
+ */
+export async function uploadFoundryImage(file, fileName = "foundry-image") {
+  const formData = new FormData();
+  formData.append("file", file, fileName);
+
+  return harkoniansFetch("/foundry/items/image", {
+    method: "POST",
+    body: formData
+  });
+}
+
+/**
+ * Fetch pending purchases which may have missed a realtime delivery.
+ *
+ * @returns {Promise<Object>}
+ */
+export async function getPendingPurchases() {
+  return harkoniansFetch("/foundry/purchases/pending");
+}
+
+
+/**
+ * Fetch authoritative character gold and published item stock.
+ *
+ * @returns {Promise<Object>}
+ */
+export async function getFoundryState() {
+  return harkoniansFetch("/foundry/state");
 }

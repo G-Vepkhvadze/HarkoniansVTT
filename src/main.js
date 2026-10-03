@@ -26,7 +26,9 @@ import {
 
 import {
     acknowledgePurchase,
-    reportPurchaseFailure
+    reportPurchaseFailure,
+    getPendingPurchases,
+    getFoundryState
 } from "./api/client.js";
 
 
@@ -34,6 +36,7 @@ const MODULE_ID = "harkoniansvtt";
 const ITEM_ACTION = "harkoniansAddItem";
 let goldSyncInterval = null;
 let goldSyncInProgress = false;
+let goldSyncDebounceTimer = null;
 
 function registerSceneControl() {
     Hooks.on(
@@ -163,6 +166,137 @@ function registerItemSheetControl() {
 }
 
 /**
+ * Reconcile purchases that may have been missed while Foundry or Realtime
+ * was disconnected. This is intentionally safe to run repeatedly because
+ * handlePurchaseEvent uses the purchaseId flag for idempotent delivery.
+ */
+async function resyncFoundryState() {
+    if (!isWorldLinked()) {
+        return;
+    }
+
+    try {
+        const state = await getFoundryState();
+        const credentials = getActorCredentials();
+
+        if (
+            credentials?.foundryActorId &&
+            state?.actorId &&
+            credentials.foundryActorId !== state.actorId
+        ) {
+            return;
+        }
+
+        const actor = getLinkedActor();
+
+        if (actor && Number.isFinite(Number(state?.gold))) {
+            const gold = Math.max(
+                0,
+                Math.floor(Number(state.gold))
+            );
+
+            const currentGold = Number(
+                foundry.utils.getProperty(
+                    actor,
+                    "system.currency.gp"
+                ) ?? 0
+            );
+
+            if (currentGold !== gold) {
+                await actor.update({
+                    "system.currency.gp": gold
+                });
+            }
+        }
+
+        if (Array.isArray(state?.items)) {
+            for (const storeItem of state.items) {
+                const foundryItem = game.items.find(item =>
+                    item.getFlag(
+                        "harkoniansvtt",
+                        "storeItemId"
+                    ) === storeItem.id
+                );
+
+                if (!foundryItem) {
+                    continue;
+                }
+
+                const stock =
+                    Number(storeItem.stock);
+
+                if (!Number.isFinite(stock)) {
+                    continue;
+                }
+
+                const normalizedStock =
+                    stock === -1
+                        ? -1
+                        : Math.max(
+                            0,
+                            Math.floor(stock)
+                        );
+
+                const currentStock =
+                    Number(
+                        foundryItem.getFlag(
+                            "harkoniansvtt",
+                            "stock"
+                        )
+                    );
+
+                if (currentStock !== normalizedStock) {
+                    await foundryItem.setFlag(
+                        "harkoniansvtt",
+                        "stock",
+                        normalizedStock
+                    );
+                }
+            }
+        }
+    } catch (error) {
+        console.error(
+            "HarkoniansVTT | Authoritative state resync failed:",
+            error
+        );
+    }
+}
+
+async function resyncPendingPurchases() {
+    if (!isWorldLinked()) {
+        return;
+    }
+
+    const credentials = getActorCredentials();
+
+    if (!credentials?.characterId || !credentials?.foundryActorId) {
+        return;
+    }
+
+    try {
+        const response = await getPendingPurchases();
+        const purchases = Array.isArray(response?.purchases)
+            ? response.purchases
+            : [];
+
+        for (const purchase of purchases) {
+            await handlePurchaseEvent(purchase);
+        }
+
+        if (purchases.length > 0) {
+            console.log(
+                `HarkoniansVTT | Resynchronized ${purchases.length} pending purchase(s).`
+            );
+        }
+    } catch (error) {
+        console.error(
+            "HarkoniansVTT | Pending purchase resync failed:",
+            error
+        );
+    }
+}
+
+/**
  * Handle a purchase event from Harkonians.
  * 
  * @param {Object} payload - Purchase payload
@@ -243,8 +377,17 @@ async function handlePurchaseEvent(payload) {
     let itemData;
 
     try {
+        if (
+            !item.foundryItemData ||
+            typeof item.foundryItemData !== "object"
+        ) {
+            throw new Error(
+                "Purchase does not contain the original Foundry Item data."
+            );
+        }
+
         itemData = structuredClone(
-            item.foundryItemData || {}
+            item.foundryItemData
         );
 
         delete itemData._id;
@@ -255,8 +398,21 @@ async function handlePurchaseEvent(payload) {
         }
 
         if (!itemData.type) {
-            itemData.type = item.type || "item";
+            throw new Error(
+                "Purchase Foundry Item data is missing its Item type."
+            );
         }
+
+        // Put the purchase marker into the creation payload itself.
+        // This makes delivery idempotent even if Foundry crashes between
+        // createEmbeddedDocuments() and a subsequent setFlag() call.
+        itemData.flags = {
+            ...(itemData.flags || {}),
+            harkoniansvtt: {
+                ...((itemData.flags || {}).harkoniansvtt || {}),
+                purchaseId
+            }
+        };
     } catch (error) {
         console.error(
             "HarkoniansVTT | Failed to prepare purchased item:",
@@ -294,19 +450,6 @@ async function handlePurchaseEvent(payload) {
         ) {
             throw new Error(
                 `Expected ${itemsToCreate.length} item(s), created ${createdItems?.length ?? 0}.`
-            );
-        }
-
-        /*
-         * Mark every created item with this purchase ID.
-         * This prevents duplicate delivery if the realtime
-         * message is received more than once.
-         */
-        for (const createdItem of createdItems) {
-            await createdItem.setFlag(
-                "harkoniansvtt",
-                "purchaseId",
-                purchaseId
             );
         }
 
@@ -573,6 +716,21 @@ async function syncLinkedActorGold() {
     }
 }
 
+function scheduleGoldSync() {
+    if (!isWorldLinked()) {
+        return;
+    }
+
+    if (goldSyncDebounceTimer) {
+        clearTimeout(goldSyncDebounceTimer);
+    }
+
+    goldSyncDebounceTimer = setTimeout(() => {
+        goldSyncDebounceTimer = null;
+        void syncLinkedActorGold();
+    }, 1000);
+}
+
 function startGoldSync() {
     if (goldSyncInterval) {
         return;
@@ -583,6 +741,8 @@ function startGoldSync() {
     goldSyncInterval = setInterval(
         () => {
             void syncLinkedActorGold();
+            void resyncPendingPurchases();
+            void resyncFoundryState();
         },
         60_000
     );
@@ -599,6 +759,12 @@ function stopGoldSync() {
 
     clearInterval(goldSyncInterval);
     goldSyncInterval = null;
+
+    if (goldSyncDebounceTimer) {
+        clearTimeout(goldSyncDebounceTimer);
+        goldSyncDebounceTimer = null;
+    }
+
     goldSyncInProgress = false;
 
     console.log(
@@ -606,6 +772,23 @@ function stopGoldSync() {
     );
 }
 
+
+/*
+ * Push manual/system-driven GP changes to Harkonians quickly rather than
+ * waiting for the 60-second reconciliation interval.
+ */
+Hooks.on("updateActor", (actor) => {
+    const credentials = getActorCredentials();
+
+    if (
+        !credentials?.foundryActorId ||
+        actor?.id !== credentials.foundryActorId
+    ) {
+        return;
+    }
+
+    scheduleGoldSync();
+});
 
 /* Ready*/
 
@@ -633,6 +816,8 @@ Hooks.once("ready", async () => {
                 );
             }
 
+            await resyncPendingPurchases();
+            await resyncFoundryState();
             startGoldSync();
         }
     }

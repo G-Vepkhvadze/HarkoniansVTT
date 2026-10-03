@@ -1,78 +1,88 @@
-export async function fetchFoundryImage(
-    imagePath
-) {
-    if (
-        !imagePath ||
-        typeof imagePath !== "string"
-    ) {
+/**
+ * Resolve a Foundry Item image.
+ *
+ * Remote HTTP(S) images can remain URLs.
+ * Foundry-local assets are fetched from Foundry itself and returned as a File
+ * so they can be uploaded directly to Harkonians without base64 expansion.
+ */
+export async function fetchFoundryImage(imagePath) {
+    if (!imagePath || typeof imagePath !== "string") {
         return null;
     }
 
-    // Remote URL.
+    const trimmed = imagePath.trim();
+
+    if (!trimmed) {
+        return null;
+    }
+
     if (
-        imagePath.startsWith("http://") ||
-        imagePath.startsWith("https://")
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://")
     ) {
         return {
             type: "url",
-            url: imagePath
+            url: trimmed
         };
     }
 
-    // Foundry-local path.
-    try {
-        const response =
-            await fetch(imagePath);
+    const response = await fetch(trimmed);
 
-        if (!response.ok) {
-            throw new Error(
-                `HTTP ${response.status}`
-            );
-        }
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
 
-        const blob =
-            await response.blob();
+    const blob = await response.blob();
 
-        const buffer =
-            await blob.arrayBuffer();
+    const fileName =
+        trimmed
+            .split("/")
+            .pop()
+            ?.split("?")[0]
+            ?.split("#")[0]
+        || "foundry-image";
 
-        const bytes =
-            new Uint8Array(buffer);
+    const contentType =
+        blob.type ||
+        inferContentType(fileName);
 
-        let binary = "";
+    const file = new File(
+        [blob],
+        fileName,
+        { type: contentType }
+    );
 
-        const chunkSize = 0x8000;
+    return {
+        type: "file",
+        file,
+        fileName,
+        contentType,
+        size: file.size
+    };
+}
 
-        for (
-            let i = 0;
-            i < bytes.length;
-            i += chunkSize
-        ) {
-            binary += String.fromCharCode(
-                ...bytes.subarray(
-                    i,
-                    i + chunkSize
-                )
-            );
-        }
+function inferContentType(fileName) {
+    const extension =
+        fileName
+            .split(".")
+            .pop()
+            ?.toLowerCase();
 
-        const base64 =
-            btoa(binary);
-
-        return {
-            type: "base64",
-            data: base64,
-            contentType:
-                blob.type ||
-                "application/octet-stream"
-        };
-    } catch (error) {
-        console.error(
-            "HarkoniansVTT | Failed to read Foundry image:",
-            imagePath,
-            error
-        );
-
-        return null;
+    switch (extension) {
+        case "webp":
+            return "image/webp";
+        case "png":
+            return "image/png";
+        case "jpg":
+        case "jpeg":
+            return "image/jpeg";
+        case "gif":
+            return "image/gif";
+        case "avif":
+            return "image/avif";
+        case "svg":
+            return "image/svg+xml";
+        default:
+            return "application/octet-stream";
     }
 }
