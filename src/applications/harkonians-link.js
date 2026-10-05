@@ -20,7 +20,8 @@ import {
 } from "../utils.js";
 
 import {
-    synchronizeActorGold
+    applyServerGoldToActor,
+    bootstrapActorGold
 } from "../api/harkonians-gold.js";
 
 const {
@@ -410,13 +411,38 @@ export class HarkoniansLinkApplication
 
                         characterId,
 
-                        characterToken
+                        characterToken,
+
+                        lastKnownServerGold:
+                            null
                     });
 
                     try {
-                        await synchronizeActorGold(
-                            actor
-                        );
+                        const goldResponse =
+                            await bootstrapActorGold(
+                                actor
+                            );
+
+                        const serverGold =
+                            Number(goldResponse?.gold);
+
+                        if (
+                            goldResponse?.bootstrapped === false &&
+                            Number.isFinite(serverGold)
+                        ) {
+                            await applyServerGoldToActor(
+                                actor,
+                                serverGold
+                            );
+
+                            ui.notifications.warn(
+                                `Harkonians | Existing server gold was preserved at ${serverGold} GP.`
+                            );
+                        } else {
+                            ui.notifications.info(
+                                `Harkonians | Initial gold synchronized: ${serverGold} GP.`
+                            );
+                        }
 
                     } catch (error) {
                         console.error(
@@ -425,7 +451,7 @@ export class HarkoniansLinkApplication
                         );
 
                         ui.notifications.warn(
-                            "Harkonians | Character linked, but initial gold synchronization failed."
+                            `Harkonians | Character linked, but initial gold synchronization failed: ${error?.message ?? "Unknown error"}`
                         );
                     }
 

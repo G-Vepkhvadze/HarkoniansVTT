@@ -52,20 +52,37 @@ async function harkoniansFetch(endpoint, options = {}) {
   
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}`;
+    let errorData = null;
+
     try {
-      const errorData = await response.json();
-      errorMessage = errorData.error || errorMessage;
+      errorData = await response.json();
+      errorMessage = errorData?.error || errorMessage;
     } catch {
-      // If we can't parse as JSON, try text
+      // If we can't parse as JSON, try text.
       try {
         const errorText = await response.text();
         errorMessage = errorText || errorMessage;
       } catch {
-        // Can't get error body, use status
+        // Can't get error body, use status.
       }
     }
+
     const error = new Error(errorMessage);
     error.status = response.status;
+    error.payload = errorData;
+
+    if (
+      errorData &&
+      typeof errorData.gold === "number" &&
+      Number.isFinite(errorData.gold)
+    ) {
+      error.gold = errorData.gold;
+    }
+
+    if (errorData?.conflict === true) {
+      error.conflict = true;
+    }
+
     throw error;
   }
   
@@ -233,7 +250,7 @@ export async function getGold() {
  * @param {number} gold
  * @returns {Promise<Object>}
  */
-export async function syncGold(gold) {
+export async function syncGold(gold, expectedGold = null) {
   const credentials = getActorCredentials();
 
   if (
@@ -243,7 +260,41 @@ export async function syncGold(gold) {
     throw new Error("No linked Foundry actor.");
   }
 
+  const body = {
+    foundryWorldId: game.world.id,
+    foundryActorId: credentials.foundryActorId,
+    gold: Math.max(0, Math.floor(Number(gold) || 0))
+  };
+
+  if (
+    Number.isFinite(Number(expectedGold)) &&
+    Number(expectedGold) >= 0
+  ) {
+    body.expectedGold = Math.floor(Number(expectedGold));
+  }
+
   return harkoniansFetch("/foundry/gold/sync", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
+/**
+ * Bootstrap the server-side gold balance when a Foundry Actor is linked
+ * for the first time. The server decides whether the bootstrap may overwrite
+ * the existing balance (for example, a character with purchase history).
+ */
+export async function bootstrapGold(gold) {
+  const credentials = getActorCredentials();
+
+  if (
+    !credentials?.foundryActorId ||
+    !game?.world?.id
+  ) {
+    throw new Error("No linked Foundry actor.");
+  }
+
+  return harkoniansFetch("/foundry/gold/bootstrap", {
     method: "POST",
     body: JSON.stringify({
       foundryWorldId: game.world.id,

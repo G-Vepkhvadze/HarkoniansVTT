@@ -14,6 +14,8 @@ import {
 } from "./applications/harkonians-item-publisher.js";
 
 import {
+    applyServerGoldToActor,
+    isApplyingServerGold,
     synchronizeActorGold
 } from "./api/harkonians-gold.js";
 
@@ -202,11 +204,10 @@ async function resyncFoundryState() {
                 ) ?? 0
             );
 
-            if (currentGold !== gold) {
-                await actor.update({
-                    "system.currency.gp": gold
-                });
-            }
+            await applyServerGoldToActor(
+                actor,
+                gold
+            );
         }
 
         if (Array.isArray(state?.items)) {
@@ -457,11 +458,24 @@ async function handlePurchaseEvent(payload) {
             createdItems[0] ||
             existingItems[0];
 
-        await acknowledgePurchase(
-            purchaseId,
-            actor.id,
-            acknowledgedItem.id
-        );
+        /*
+         * The item now exists in Foundry. An ACK failure must NOT turn this
+         * into FAILED because that could refund a purchase whose item was
+         * already delivered. Leave it PENDING and let the normal reconciliation
+         * pass ACK it later.
+         */
+        try {
+            await acknowledgePurchase(
+                purchaseId,
+                actor.id,
+                acknowledgedItem.id
+            );
+        } catch (ackError) {
+            console.error(
+                "HarkoniansVTT | Item delivered but purchase ACK failed:",
+                ackError
+            );
+        }
 
         ui.notifications.info(
             purchaseQuantity === 1
@@ -553,9 +567,10 @@ async function handleGoldUpdate(payload) {
         return;
     }
 
-    await actor.update({
-        "system.currency.gp": newGold
-    });
+    await applyServerGoldToActor(
+        actor,
+        newGold
+    );
 
     console.log(
         `HarkoniansVTT | Gold updated from Harkonians: ${newGold} GP`
@@ -701,11 +716,17 @@ async function syncLinkedActorGold() {
             ) ?? 0
         );
 
-        await synchronizeActorGold(actor);
+        const result = await synchronizeActorGold(actor);
 
-        console.log(
-            `HarkoniansVTT | Gold synchronized: ${gold} GP`
-        );
+        if (result?.conflict) {
+            console.warn(
+                `HarkoniansVTT | Gold conflict detected; Foundry updated to authoritative ${result.gold} GP.`
+            );
+        } else {
+            console.log(
+                `HarkoniansVTT | Gold synchronized: ${gold} GP`
+            );
+        }
     } catch (error) {
         console.error(
             "HarkoniansVTT | Gold synchronization failed:",
@@ -777,13 +798,27 @@ function stopGoldSync() {
  * Push manual/system-driven GP changes to Harkonians quickly rather than
  * waiting for the 60-second reconciliation interval.
  */
-Hooks.on("updateActor", (actor) => {
+Hooks.on("updateActor", (actor, changes) => {
+    if (isApplyingServerGold()) {
+        return;
+    }
+
     const credentials = getActorCredentials();
 
     if (
         !credentials?.foundryActorId ||
         actor?.id !== credentials.foundryActorId
     ) {
+        return;
+    }
+
+    const changedGold =
+        foundry.utils.getProperty(
+            changes,
+            "system.currency.gp"
+        );
+
+    if (changedGold === undefined) {
         return;
     }
 
@@ -807,6 +842,11 @@ Hooks.once("ready", async () => {
         const credentials = getActorCredentials();
 
         if (credentials?.characterId) {
+            // Establish an authoritative baseline before any optimistic
+            // Foundry -> Harkonians gold update is allowed to run.
+            await resyncFoundryState();
+            await resyncPendingPurchases();
+
             try {
                 await connectRealtime();
             } catch (error) {
@@ -816,8 +856,6 @@ Hooks.once("ready", async () => {
                 );
             }
 
-            await resyncPendingPurchases();
-            await resyncFoundryState();
             startGoldSync();
         }
     }

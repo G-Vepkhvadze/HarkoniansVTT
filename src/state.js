@@ -14,6 +14,8 @@ export const SETTINGS = {
         "actorCredentials"
 };
 
+let lastKnownServerGold = null;
+
 export function registerSettings() {
     game.settings.register(
         MODULE_ID,
@@ -89,6 +91,48 @@ export function getActorCredentials() {
     );
 }
 
+export function getLastKnownServerGold() {
+    const stored = getActorCredentials()?.lastKnownServerGold;
+
+    if (Number.isFinite(Number(stored))) {
+        return Math.max(
+            0,
+            Math.floor(Number(stored))
+        );
+    }
+
+    if (Number.isFinite(lastKnownServerGold)) {
+        return lastKnownServerGold;
+    }
+
+    return null;
+}
+
+export async function saveLastKnownServerGold(gold) {
+    const normalized =
+        Number.isFinite(Number(gold))
+            ? Math.max(0, Math.floor(Number(gold)))
+            : null;
+
+    lastKnownServerGold = normalized;
+
+    const credentials = getActorCredentials();
+
+    if (!credentials?.characterId) {
+        return;
+    }
+
+    await game.settings.set(
+        MODULE_ID,
+        SETTINGS.actorCredentials,
+        {
+            ...credentials,
+            lastKnownServerGold: normalized
+        }
+    );
+}
+
+
 export function getLinkedActor() {
     const credentials =
         getActorCredentials();
@@ -121,12 +165,22 @@ export async function saveActorCredentials(
             credentials.characterId,
 
             characterToken:
-            credentials.characterToken
+            credentials.characterToken,
+
+            lastKnownServerGold:
+            credentials.lastKnownServerGold ?? null
         }
     );
+
+    lastKnownServerGold =
+        Number.isFinite(Number(credentials.lastKnownServerGold))
+            ? Math.max(0, Math.floor(Number(credentials.lastKnownServerGold)))
+            : null;
 }
 
 export async function clearActorCredentials() {
+    lastKnownServerGold = null;
+
     await game.settings.set(
         MODULE_ID,
         SETTINGS.actorCredentials,

@@ -1,21 +1,17 @@
 {
   "id": "harkoniansvtt",
   "title": "HarkoniansVTT",
-  "version": "6.4.0",
-
+  "version": "6.4.1",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
   },
-
   "esmodules": [
     "scripts/main.js"
   ],
-
   "styles": [
     "styles/harkonians.css"
   ],
-
   "manifest": "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/download/stable/module.json",
   "download": "https://github.com/G-Vepkhvadze/HarkoniansVTT/releases/download/stable/harkoniansvtt.zip"
 }

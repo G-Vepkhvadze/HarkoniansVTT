@@ -4,10 +4,11 @@
  * Supabase Realtime client for receiving live events from Harkonians.
  */
 
-import { 
-    getActorCredentials, 
+import {
+    getActorCredentials,
     getWorldSecret,
 } from "../state.js";
+import { createClient } from "@supabase/supabase-js";
 import { getRealtimeToken } from "./client.js";
 
 // Supabase configuration
@@ -43,10 +44,6 @@ function initSupabase() {
   if (supabase) {
     return;
   }
-  
-  // Dynamic import of supabase-js
-  // This will be bundled by esbuild
-  const { createClient } = require('@supabase/supabase-js');
   
   supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     realtime: {
@@ -173,8 +170,11 @@ async function subscribeToCharacter() {
       if (status === "SUBSCRIBED") {
         console.log("HarkoniansVTT | Subscribed to character channel:", characterId);
         
-        // Schedule token refresh
-        scheduleTokenRefresh(tokenData.expiresAt);
+        // Schedule token refresh only when the API supplied a usable
+        // expiry timestamp.
+        if (Number.isFinite(Number(tokenData?.expiresAt))) {
+          scheduleTokenRefresh(Number(tokenData.expiresAt));
+        }
         
         resolve();
       } else if (status === "CHANNEL_ERROR") {
