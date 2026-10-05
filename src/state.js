@@ -92,17 +92,35 @@ export function getActorCredentials() {
 }
 
 export function getLastKnownServerGold() {
-    const stored = getActorCredentials()?.lastKnownServerGold;
+    const stored =
+        getActorCredentials()
+            ?.lastKnownServerGold;
 
-    if (Number.isFinite(Number(stored))) {
+    if (
+        stored !== null &&
+        stored !== undefined &&
+        stored !== "" &&
+        Number.isFinite(Number(stored))
+    ) {
         return Math.max(
             0,
             Math.floor(Number(stored))
         );
     }
 
-    if (Number.isFinite(lastKnownServerGold)) {
-        return lastKnownServerGold;
+    if (
+        lastKnownServerGold !== null &&
+        lastKnownServerGold !== undefined &&
+        Number.isFinite(
+            Number(lastKnownServerGold)
+        )
+    ) {
+        return Math.max(
+            0,
+            Math.floor(
+                Number(lastKnownServerGold)
+            )
+        );
     }
 
     return null;

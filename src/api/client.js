@@ -267,10 +267,15 @@ export async function syncGold(gold, expectedGold = null) {
   };
 
   if (
-    Number.isFinite(Number(expectedGold)) &&
-    Number(expectedGold) >= 0
+      expectedGold !== null &&
+      expectedGold !== undefined &&
+      Number.isFinite(Number(expectedGold)) &&
+      Number(expectedGold) >= 0
   ) {
-    body.expectedGold = Math.floor(Number(expectedGold));
+    body.expectedGold =
+        Math.floor(
+            Number(expectedGold)
+        );
   }
 
   return harkoniansFetch("/foundry/gold/sync", {
